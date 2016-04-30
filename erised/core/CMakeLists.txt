@@ -1,0 +1,10 @@
+include_directories(${CMAKE_CURRENT_SOURCE_DIR}/src)
+
+if (ERISED_BUILD_TESTS)
+  file(GLOB SOURCES ${CMAKE_CURRENT_SOURCE_DIR}/test/*.cc)
+  foreach(local_file ${SOURCES})
+    get_filename_component(local_filename ${local_file} NAME_WE)
+    add_executable(${local_filename} ${local_file})
+    target_link_libraries(${local_filename} ${GTEST_LIBRARIES} ${GTEST_MAIN_LIBRARIES})
+  endforeach()
+endif ()
