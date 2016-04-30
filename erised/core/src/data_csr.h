@@ -7,42 +7,35 @@
 #include <vector>
 #include <memory>
 #include <functional>
+#include <iostream>
 
 namespace erised {
 
-class CsrRow;
-
 template<typename T>
-class DataCsr: public DataBase {
+class DataCsr: public DataBase<T> {
  public:
   using size_type = std::size_t;
 
-  CsrMat();
-  CsrMat(size_type rows, size_type cols);
-  CsrMat(std::initializer_list<std::initializer_list<T>> set);
-  CsrMat(const CsrMat<T>& m);
-  CsrMat(CsrMat<T>&& m);
+  using MapFn = T(&&)(T);
+  using ReduceFn = T(&&)(T, T);
 
-  CsrMat();
-  CsrMat(size_type rows, size_type cols);
+  DataCsr();
+  DataCsr(size_type rows, size_type cols);
+  DataCsr(std::initializer_list<std::initializer_list<T>> set);
+  DataCsr(const DataCsr<T>& m);
+  DataCsr(DataCsr<T>&& m);
 
-  template<class Fn = void(T)>
-  virtual void Map(Fn&& fn) = 0;
+  virtual void Map(MapFn fn) = 0;
 
-  template<class Fn = void(T)>
-  virtual void RowMap(size_t i, Fn&& fn) = 0;
+  virtual void RowMap(size_t i, MapFn fn) = 0;
 
-  template<class Fn = void(T)>
-  virtual void ColMap(size_t i, Fn&& fn) = 0;
+  virtual void ColMap(size_t i, MapFn fn) = 0;
 
-  template<class Fn = T(T,T)>
-  virtual T Reduce(Fn&& fn) = 0;
+  virtual T Reduce(ReduceFn fn) = 0;
 
-  template<class Fn = T(T,T)>
-  virtual T RowReduce(size_t i, Fn&& fn) = 0;
+  virtual T RowReduce(size_t i, ReduceFn fn) = 0;
 
-  template<class Fn = T(T,T)>
-  virtual T ColReduce(size_t i, Fn&& fn) = 0;
+  virtual T ColReduce(size_t i, ReduceFn fn) = 0;
 
   void AddRow(const std::vector<T>& row);
   void AddRow(const T* row, size_type size);
@@ -50,14 +43,15 @@ class DataCsr: public DataBase {
   void AddCol(const std::vector<T>& col);
   void AddCol(const T* col, size_type size);
 
+  std::ostream& operator<< (std::ostream& stream);
+
  private:
-  std::vector<size_type> rows_;
-  std::vector<size_type> cols_;
+  std::vector<size_type> rows_offset_;
+  std::vector<size_type> cols_index_;
   std::vector<T> elems_;
 
   size_type size_rows_;
   size_type size_cols_;
-  size_type num_elems_;
 };
 
 }

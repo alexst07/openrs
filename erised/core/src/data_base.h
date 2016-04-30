@@ -37,32 +37,30 @@ template<typename T, size_t N>
 class MatBase {
  public:
   static constexpr size_t order = N;
+
   using value_type = T;
+  using MapFn = T(&&)(T);
+  using ReduceFn = T(&&)(T, T);
 
   MatBase() = default;
   virtual ~MatBase() = default;
 
-  template<class Fn = void(T)>
-  virtual void Map(Fn&& fn) = 0;
+  virtual void Map(MapFn fn) = 0;
 
-  template<class Fn = void(T)>
-  virtual void RowMap(size_t i, Fn&& fn) = 0;
+  virtual void RowMap(size_t i, MapFn fn) = 0;
 
-  template<class Fn = void(T)>
-  virtual void ColMap(size_t i, Fn&& fn) = 0;
+  virtual void ColMap(size_t i, MapFn fn) = 0;
 
-  template<class Fn = T(T,T)>
-  virtual T Reduce(Fn&& fn) = 0;
+  virtual T Reduce(ReduceFn fn) = 0;
 
-  template<class Fn = T(T,T)>
-  virtual T RowReduce(size_t i, Fn&& fn) = 0;
+  virtual T RowReduce(size_t i, ReduceFn fn) = 0;
 
-  template<class Fn = T(T,T)>
-  virtual T ColReduce(size_t i, Fn&& fn) = 0;
+  virtual T ColReduce(size_t i, ReduceFn fn) = 0;
+
 };
 
 template<typename T>
-typedef MatBase<T, 2> DataBase;
+using DataBase = MatBase<T, 2>;
 
 }
 #endif //__ERISED_MATRIX_BASE__
