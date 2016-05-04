@@ -1,4 +1,6 @@
-#include "data_csr.h"
+#ifndef ERISED_CSR_MATRIX_H_
+#error "This should only be included by AtomicHashArray.h"
+#endif
 
 namespace erised {
 
@@ -54,8 +56,26 @@ DataCsr<T>::DataCsr(const DataCsr<T>& m) {
 
 }
 
-template<typename T>
-std::ostream& DataCsr<T>::operator<<(std::ostream& stream) {
+template<typename U>
+std::ostream& operator<<(std::ostream& stream, const DataCsr<U>& mat) {
+  stream << "rows vector: ";
+  for (const auto& r: mat.rows_offset_) {
+    stream << r << " ";
+  }
+  stream << "\n";
+
+  stream << "cols index: ";
+  for (const auto& i: mat.cols_index_) {
+    stream << i << " ";
+  }
+  stream << "\n";
+
+  stream << "elems: ";
+  for (const auto& e: mat.elems_) {
+    stream << e << " ";
+  }
+  stream << "\n";
+
 //   stream << "rows vector:" << rows_offset_
 //          << "\ncols index: " << cols_index_
 //          << "\nelements: " << elems_ << "\n";

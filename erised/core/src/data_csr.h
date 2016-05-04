@@ -1,5 +1,5 @@
-#ifndef __ERISED_CSR_MATRIX__
-#define __ERISED_CSR_MATRIX__
+#pragma once
+#define ERISED_CSR_MATRIX_H_
 
 #include "data_base.h"
 
@@ -43,7 +43,8 @@ class DataCsr: public DataBase<T> {
   void AddCol(const std::vector<T>& col);
   void AddCol(const T* col, size_type size);
 
-  std::ostream& operator<< (std::ostream& stream);
+  template<typename U>
+  friend std::ostream& operator<<(std::ostream& stream, const DataCsr<U>& mat);
 
  private:
   std::vector<size_type> rows_offset_;
@@ -55,4 +56,5 @@ class DataCsr: public DataBase<T> {
 };
 
 }
-#endif //__ERISED_CSR_MATRIX__
+
+#include <data_csr-inl.h>

@@ -56,7 +56,6 @@ class MatBase {
   virtual T RowReduce(size_t i, ReduceFn fn) = 0;
 
   virtual T ColReduce(size_t i, ReduceFn fn) = 0;
-
 };
 
 template<typename T>
