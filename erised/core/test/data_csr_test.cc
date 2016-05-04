@@ -4,5 +4,15 @@
 #include <iostream>
 
 TEST(Sample, Sampleunit) {
-  std::cout << "teste\n";
+  using namespace erised;
+
+  DataCsr<int> data;
+//   DataCsr<int> data{{1, 1, 0, 0, 0, 0, 0, 0, 0},
+//                     {0, 1, 1, 0, 0, 0, 0, 0, 0},
+//                     {1, 0, 0, 1, 1, 0, 0, 0, 0},
+//                     {1, 0, 0, 0, 0, 1, 1, 1, 0},
+//                     {0, 0, 0, 0, 1, 0, 0, 0, 1},
+//                     {1, 0, 0, 0, 1, 0, 0, 0, 0}};
+
+//   std::cout << data;
 }

@@ -2,12 +2,14 @@
 
 namespace erised {
 
-DataCsr::DataCsr()
+template<typename T>
+DataCsr<T>::DataCsr()
   : size_rows_(0)
   , size_cols_(0) {
 }
 
-DataCsr::DataCsr(std::initializer_list<std::initializer_list< T >> set) {
+template<typename T>
+DataCsr<T>::DataCsr(std::initializer_list<std::initializer_list<T>> set) {
   size_type i = 0;
   size_type max_col = 0;
   size_type num_rows = 0;
@@ -40,22 +42,80 @@ DataCsr::DataCsr(std::initializer_list<std::initializer_list< T >> set) {
   size_rows_ = num_rows;
 }
 
-DataCsr::DataCsr(size_type rows, size_type cols)
+template<typename T>
+DataCsr<T>::DataCsr(size_type rows, size_type cols)
   : rows_offset_(rows + 1)
   , size_rows_(rows)
   , size_cols_(cols) {
 }
 
-DataCsr::DataCsr(const CsrMat<T>& m) {
+template<typename T>
+DataCsr<T>::DataCsr(const DataCsr<T>& m) {
 
 }
 
-std::ostream& DataCsr::operator<<(std::ostream& stream, const DataCsr& m) {
-  stream << "rows vector:" << rows_offset_
-         << "\ncols index: " << cols_index_
-         << "\nelements: " << elems_ << "\n";
+template<typename T>
+std::ostream& DataCsr<T>::operator<<(std::ostream& stream) {
+//   stream << "rows vector:" << rows_offset_
+//          << "\ncols index: " << cols_index_
+//          << "\nelements: " << elems_ << "\n";
+//
+//   return stream;
+}
 
-  return stream;
+template<typename T>
+void DataCsr<T>::AddCol(const T* col, size_type size) {
+
+}
+
+template<typename T>
+void DataCsr<T>::AddCol(const std::vector<T>& col) {
+
+}
+
+template<typename T>
+void DataCsr<T>::AddRow(const T* row, size_type size) {
+
+}
+
+template<typename T>
+void DataCsr<T>::AddRow(const std::vector<T>& row) {
+
+}
+
+template<typename T>
+DataCsr<T>::DataCsr(DataCsr<T>&& m) {
+
+}
+
+template<typename T>
+void DataCsr<T>::ColMap(size_t i, MapFn fn) {
+
+}
+
+template<typename T>
+T DataCsr<T>::ColReduce(size_t i, ReduceFn fn) {
+
+}
+
+template<typename T>
+void DataCsr<T>::Map(MapFn fn) {
+
+}
+
+template<typename T>
+T DataCsr<T>::Reduce(ReduceFn fn) {
+
+}
+
+template<typename T>
+void DataCsr<T>::RowMap(size_t i, MapFn fn) {
+
+}
+
+template<typename T>
+T DataCsr<T>::RowReduce(size_t i, ReduceFn fn) {
+
 }
 
 }

@@ -25,17 +25,17 @@ class DataCsr: public DataBase<T> {
   DataCsr(const DataCsr<T>& m);
   DataCsr(DataCsr<T>&& m);
 
-  virtual void Map(MapFn fn) = 0;
+  void Map(MapFn fn) override;
 
-  virtual void RowMap(size_t i, MapFn fn) = 0;
+  void RowMap(size_t i, MapFn fn) override;
 
-  virtual void ColMap(size_t i, MapFn fn) = 0;
+  void ColMap(size_t i, MapFn fn) override;
 
-  virtual T Reduce(ReduceFn fn) = 0;
+  T Reduce(ReduceFn fn) override;
 
-  virtual T RowReduce(size_t i, ReduceFn fn) = 0;
+  T RowReduce(size_t i, ReduceFn fn) override;
 
-  virtual T ColReduce(size_t i, ReduceFn fn) = 0;
+  T ColReduce(size_t i, ReduceFn fn) override;
 
   void AddRow(const std::vector<T>& row);
   void AddRow(const T* row, size_type size);
