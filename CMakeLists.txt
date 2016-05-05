@@ -1,6 +1,8 @@
 cmake_minimum_required (VERSION 2.8)
 project(erised C CXX)
 
+set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} "${CMAKE_SOURCE_DIR}/cmake/")
+
 include(CheckCXXCompilerFlag)
 CHECK_CXX_COMPILER_FLAG("-std=c++11" COMPILER_SUPPORTS_CXX11)
 CHECK_CXX_COMPILER_FLAG("-std=c++0x" COMPILER_SUPPORTS_CXX0X)
@@ -11,6 +13,8 @@ elseif(COMPILER_SUPPORTS_CXX0X)
 else()
   message(STATUS "The compiler ${CMAKE_CXX_COMPILER} has no C++11 support. Please use a different C++ compiler.")
 endif()
+
+find_package(TBB REQUIRED)
 
 set (ERISED_BUILD_TESTS ON)
 
