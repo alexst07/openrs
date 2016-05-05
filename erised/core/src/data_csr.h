@@ -25,6 +25,9 @@ class DataCsr: public DataBase<T> {
   DataCsr(const DataCsr<T>& m);
   DataCsr(DataCsr<T>&& m);
 
+  DataCsr<T>& operator=(const DataCsr<T>& m);
+  DataCsr<T>& operator=(DataCsr<T>&& m);
+
   void Map(MapFn fn) override;
 
   void RowMap(size_t i, MapFn fn) override;

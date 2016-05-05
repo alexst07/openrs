@@ -1,5 +1,5 @@
 #ifndef ERISED_CSR_MATRIX_H_
-#error "This should only be included by AtomicHashArray.h"
+#error "This should only be included by data_csr.h"
 #endif
 
 namespace erised {
@@ -52,8 +52,38 @@ DataCsr<T>::DataCsr(size_type rows, size_type cols)
 }
 
 template<typename T>
-DataCsr<T>::DataCsr(const DataCsr<T>& m) {
+DataCsr<T>::DataCsr(const DataCsr<T>& m)
+  : rows_offset_(m.rows_offset_)
+  , cols_index_(m.cols_index_)
+  , elems_(m.elems_) {
+}
 
+template<typename T>
+DataCsr<T>::DataCsr(DataCsr<T>&& m)
+  : rows_offset_(std::move(m.rows_offset_))
+  , cols_index_(std::move(m.cols_index_))
+  , elems_(std::move(m.elems_)) {
+}
+
+template<typename T>
+DataCsr<T>& DataCsr<T>::operator=(const DataCsr<T>& m) {
+  // self-assignment check
+  if (this != &m) {
+    rows_offset_ = m.rows_offset_;
+    cols_index_ = m.cols_index_;
+    elems_ = m.elems_;
+  }
+
+  return *this;
+}
+
+template<typename T>
+DataCsr<T>& DataCsr<T>::operator=(DataCsr<T>&& m) {
+  rows_offset_ = std::move(m.rows_offset_);
+  cols_index_ = std::move(m.cols_index_);
+  elems_ = std::move(m.elems_);
+
+  return *this;
 }
 
 template<typename U>
@@ -75,12 +105,6 @@ std::ostream& operator<<(std::ostream& stream, const DataCsr<U>& mat) {
     stream << e << " ";
   }
   stream << "\n";
-
-//   stream << "rows vector:" << rows_offset_
-//          << "\ncols index: " << cols_index_
-//          << "\nelements: " << elems_ << "\n";
-//
-//   return stream;
 }
 
 template<typename T>
@@ -100,11 +124,6 @@ void DataCsr<T>::AddRow(const T* row, size_type size) {
 
 template<typename T>
 void DataCsr<T>::AddRow(const std::vector<T>& row) {
-
-}
-
-template<typename T>
-DataCsr<T>::DataCsr(DataCsr<T>&& m) {
 
 }
 
