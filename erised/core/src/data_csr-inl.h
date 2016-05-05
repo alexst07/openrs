@@ -16,18 +16,27 @@ DataCsr<T>::DataCsr(std::initializer_list<std::initializer_list<T>> set) {
   size_type max_col = 0;
   size_type num_rows = 0;
 
+  // Scans each line
   for (const auto& row: set) {
     size_type icol = 0;
+
+    // Inserts the index for the next valid element
     rows_offset_.push_back(i);
+
+    // Scans each element on line
     for (const auto& v: row) {
-      // insert only valid element
+      // Inserts only valid element
       if (v != 0) {
         elems_.push_back(v);
+
+        // Inserts index of the column for the valid element
         cols_index_.push_back(icol);
 
-        // Update the index for element
+        // Updates the index for element
         i++;
       }
+
+      // keeps the synchronization of column in which the element is
       icol++;
 
       // Gets the largest row, it means:
@@ -37,10 +46,15 @@ DataCsr<T>::DataCsr(std::initializer_list<std::initializer_list<T>> set) {
       if (icol > max_col)
         max_col = icol;
     }
+
+    // Count each line
     num_rows++;
   }
 
+  // Assigns the max_col as the numbers of column for the matrix
   size_cols_ = max_col;
+
+  // Assigns the number of rows
   size_rows_ = num_rows;
 }
 
