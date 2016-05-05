@@ -15,9 +15,10 @@ template<typename T>
 class DataCsr: public DataBase<T> {
  public:
   using size_type = std::size_t;
-
   using MapFn = T(&&)(T);
   using ReduceFn = T(&&)(T, T);
+
+  static const int INVALID_LINE;
 
   DataCsr();
   DataCsr(size_type rows, size_type cols);
@@ -50,7 +51,7 @@ class DataCsr: public DataBase<T> {
   friend std::ostream& operator<<(std::ostream& stream, const DataCsr<U>& mat);
 
  private:
-  std::vector<size_type> rows_offset_;
+  std::vector<int> rows_offset_;
   std::vector<size_type> cols_index_;
   std::vector<T> elems_;
 

@@ -4,6 +4,10 @@
 
 namespace erised {
 
+// define const variables
+template<typename T>
+const int DataCsr<T>::INVALID_LINE = -1;
+
 template<typename T>
 DataCsr<T>::DataCsr()
   : size_rows_(0)
@@ -19,6 +23,7 @@ DataCsr<T>::DataCsr(std::initializer_list<std::initializer_list<T>> set) {
   // Scans each line
   for (const auto& row: set) {
     size_type icol = 0;
+    size_type i_prev = i;
 
     // Inserts the index for the next valid element
     rows_offset_.push_back(i);
@@ -46,6 +51,10 @@ DataCsr<T>::DataCsr(std::initializer_list<std::initializer_list<T>> set) {
       if (icol > max_col)
         max_col = icol;
     }
+
+    // If there is no valid value on line, assigns -1 as offset of this line
+    if (i == i_prev)
+      rows_offset_.back() = INVALID_LINE;
 
     // Count each line
     num_rows++;
