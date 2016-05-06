@@ -1,0 +1,183 @@
+#ifndef ERISED_CSR_MATRIX_MAP_H_
+#error "This should only be included by data_csr_map.h"
+#endif
+
+#include "parallel.h"
+
+namespace erised {
+
+// define const variables
+template<typename T>
+const int DataCsrMap<T>::INVALID_LINE = -1;
+
+template<typename T>
+DataCsrMap<T>::DataCsrMap()
+  : size_rows_(0)
+  , size_cols_(0) {
+}
+
+template<typename T>
+DataCsrMap<T>::DataCsrMap(std::initializer_list<std::initializer_list<T>> set) {
+  size_type i = 0;
+  size_type max_col = 0;
+  size_type num_rows = 0;
+
+  // Scans each line
+  for (const auto& row: set) {
+    // Map with column index and elements
+    std::unordered_map<size_type, T> map;
+    size_type icol = 0;
+    size_type i_prev = i;
+    size_type row_size = row.size();
+
+    // Assigns the larger line as the max column numbers elements
+    if (max_col < row_size)
+      max_col = row_size;
+
+    // Scans each element on line
+    for (const auto& v: row) {
+      // Inserts only valid elements
+      if (v != 0) {
+        map.insert(std::pair<size_type, T>(icol, v));
+      }
+
+      icol++;
+    }
+
+    // Insert the map with column index and elments
+    rows_.push_back(std::move(map));
+
+    // Count each line
+    num_rows++;
+  }
+
+  // Assigns the max_col as the numbers of column for the matrix
+  size_cols_ = max_col;
+
+  // Assigns the number of rows
+  size_rows_ = set.size();
+}
+
+template<typename T>
+DataCsrMap<T>::DataCsrMap(size_type rows, size_type cols)
+  : size_rows_(rows)
+  , size_cols_(cols) {
+}
+
+template<typename T>
+DataCsrMap<T>::DataCsrMap(const DataCsrMap<T>& m)
+  : rows_(m.rows_) {
+}
+
+template<typename T>
+DataCsrMap<T>::DataCsrMap(DataCsrMap<T>&& m)
+  : rows_(std::move(m.rows_)) {
+}
+
+template<typename T>
+DataCsrMap<T>& DataCsrMap<T>::operator=(const DataCsrMap<T>& m) {
+  // self-assignment check
+  if (this != &m) {
+    rows_ = m.rows_;
+  }
+
+  return *this;
+}
+
+template<typename T>
+DataCsrMap<T>& DataCsrMap<T>::operator=(DataCsrMap<T>&& m) {
+  rows_ = std::move(m.rows_);
+
+  return *this;
+}
+
+template<typename U>
+std::ostream& operator<<(std::ostream& stream, const DataCsrMap<U>& mat) {
+  stream << "rows vector: ";
+  for (const auto& r: mat.rows_) {
+    for (const auto& m: r) {
+      stream << m.first << " : " << m.second << '\n';
+    }
+    stream << "\n";
+  }
+
+  return stream;
+}
+
+template<typename T>
+void DataCsrMap<T>::AddCol(const T* col, size_type size) {
+
+}
+
+template<typename T>
+void DataCsrMap<T>::AddCol(const std::vector<T>& col) {
+
+}
+
+template<typename T>
+void DataCsrMap<T>::AddRow(const T* row, size_type size) {
+
+}
+
+template<typename T>
+void DataCsrMap<T>::AddRow(const std::vector<T>& row) {
+
+}
+
+template<typename T>
+void DataCsrMap<T>::ColMap(size_t i, MapFn fn) {
+
+}
+
+template<typename T>
+T DataCsrMap<T>::ColReduce(size_t i, ReduceFn fn) {
+
+}
+
+template<typename T>
+void DataCsrMap<T>::Map(const MapFn& fn) {
+  // Gets all elements
+  Range<ElemIter> range(rows_.begin(), rows_.end());
+
+  // Executes the function fn on all elments
+  parallel_for(range, [&](Range<ElemIter>& r){
+    // Scan each line
+    for(auto i = r.begin(); i!=r.end(); ++i)
+      // Scan element by element from the line
+      for(const auto& e: *i)
+        i->operator[](e.first) = fn(e.second);
+  });
+}
+
+template<typename T>
+T DataCsrMap<T>::Reduce(ReduceFn fn) {
+
+}
+
+template<typename T>
+void DataCsrMap<T>::RowMap(size_t i, MapFn fn) {
+//   // Verifies if the line has some valid element
+//   if (rows_offset_[i] == INVALID_LINE)
+//     return;
+//
+//   // Calculates the start of the line on elments
+//   auto start = elems_.begin() + rows_offset_[i];
+//
+//   // Calculates the end of the line on elments
+//   auto end = elems_.begin() + rows_offset_[i + 1];
+//
+//   Range<ElemIter> range(start , end);
+//
+//   // Executes the function fn on elments from line i
+//   parallel_for(range, [&](Range<ElemIter>& r){
+//     for(auto i = r.begin(); i!=r.end(); ++i)
+//       *i = fn(*i);
+//   });
+}
+
+template<typename T>
+T DataCsrMap<T>::RowReduce(size_t i, ReduceFn fn) {
+
+}
+
+}

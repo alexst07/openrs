@@ -2,7 +2,7 @@
 #define __ERISED_MATRIX_BASE__
 
 #include <initializer_list>
-#include <valarray>
+#include <functional>
 
 namespace erised {
 
@@ -39,13 +39,13 @@ class MatBase {
   static constexpr size_t order = N;
 
   using value_type = T;
-  using MapFn = T(&&)(T);
-  using ReduceFn = T(&&)(T, T);
+  using MapFn = std::function<T(T)>;
+  using ReduceFn = std::function<T(T,T)>;
 
   MatBase() = default;
   virtual ~MatBase() = default;
 
-  virtual void Map(MapFn fn) = 0;
+  virtual void Map(const MapFn& fn) = 0;
 
   virtual void RowMap(size_t i, MapFn fn) = 0;
 

@@ -2,6 +2,8 @@
 #error "This should only be included by data_csr.h"
 #endif
 
+#include "parallel.h"
+
 namespace erised {
 
 // define const variables
@@ -161,8 +163,15 @@ T DataCsr<T>::ColReduce(size_t i, ReduceFn fn) {
 }
 
 template<typename T>
-void DataCsr<T>::Map(MapFn fn) {
+void DataCsr<T>::Map(const MapFn& fn) {
+  // Gets all elements
+  Range<ElemIter> range(elems_.begin(), elems_.end());
 
+  // Executes the function fn on all elments
+  parallel_for(range, [&](Range<ElemIter>& r){
+    for(auto i = r.begin(); i!=r.end(); ++i)
+      *i = fn(*i);
+  });
 }
 
 template<typename T>
@@ -172,7 +181,23 @@ T DataCsr<T>::Reduce(ReduceFn fn) {
 
 template<typename T>
 void DataCsr<T>::RowMap(size_t i, MapFn fn) {
+  // Verifies if the line has some valid element
+  if (rows_offset_[i] == INVALID_LINE)
+    return;
 
+  // Calculates the start of the line on elments
+  auto start = elems_.begin() + rows_offset_[i];
+
+  // Calculates the end of the line on elments
+  auto end = elems_.begin() + rows_offset_[i + 1];
+
+  Range<ElemIter> range(start , end);
+
+  // Executes the function fn on elments from line i
+  parallel_for(range, [&](Range<ElemIter>& r){
+    for(auto i = r.begin(); i!=r.end(); ++i)
+      *i = fn(*i);
+  });
 }
 
 template<typename T>

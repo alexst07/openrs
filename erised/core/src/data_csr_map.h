@@ -1,5 +1,5 @@
 #pragma once
-#define ERISED_CSR_MATRIX_H_
+#define ERISED_CSR_MATRIX_MAP_H_
 
 #include "data_base.h"
 
@@ -8,28 +8,30 @@
 #include <memory>
 #include <functional>
 #include <iostream>
+#include <unordered_map>
 
 namespace erised {
 
 template<typename T>
-class DataCsr: public DataBase<T> {
+class DataCsrMap: public DataBase<T> {
  public:
   using size_type = std::size_t;
   using MapFn = std::function<T(T)>;
   using ReduceFn = std::function<T(T,T)>;
-  using ElemIter = typename std::vector<T>::iterator;
-  using ConstElemIter = typename std::vector<T>::const_iterator;
+  using VecMap = typename std::vector<std::unordered_map<size_type, T>>;
+  using ElemIter = typename VecMap::iterator;
+  using ConstElemIter = typename VecMap::const_iterator;
 
   static const int INVALID_LINE;
 
-  DataCsr();
-  DataCsr(size_type rows, size_type cols);
-  DataCsr(std::initializer_list<std::initializer_list<T>> set);
-  DataCsr(const DataCsr<T>& m);
-  DataCsr(DataCsr<T>&& m);
+  DataCsrMap();
+  DataCsrMap(size_type rows, size_type cols);
+  DataCsrMap(std::initializer_list<std::initializer_list<T>> set);
+  DataCsrMap(const DataCsrMap<T>& m);
+  DataCsrMap(DataCsrMap<T>&& m);
 
-  DataCsr<T>& operator=(const DataCsr<T>& m);
-  DataCsr<T>& operator=(DataCsr<T>&& m);
+  DataCsrMap<T>& operator=(const DataCsrMap<T>& m);
+  DataCsrMap<T>& operator=(DataCsrMap<T>&& m);
 
   void Map(const MapFn& fn) override;
 
@@ -50,12 +52,10 @@ class DataCsr: public DataBase<T> {
   void AddCol(const T* col, size_type size);
 
   template<typename U>
-  friend std::ostream& operator<<(std::ostream& stream, const DataCsr<U>& mat);
+  friend std::ostream& operator<<(std::ostream& stream, const DataCsrMap<U>& mat);
 
  private:
-  std::vector<int> rows_offset_;
-  std::vector<size_type> cols_index_;
-  std::vector<T> elems_;
+  VecMap rows_;
 
   size_type size_rows_;
   size_type size_cols_;
@@ -63,4 +63,4 @@ class DataCsr: public DataBase<T> {
 
 }
 
-#include <data_csr-inl.h>
+#include "data_csr_map-inl.h"
