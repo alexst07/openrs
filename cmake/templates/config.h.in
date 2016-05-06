@@ -1,0 +1,4 @@
+#pragma once
+
+/* Intel Threading Building Blocks */
+#cmakedefine HAVE_TBB

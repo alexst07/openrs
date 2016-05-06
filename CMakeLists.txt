@@ -14,14 +14,22 @@ else()
   message(STATUS "The compiler ${CMAKE_CXX_COMPILER} has no C++11 support. Please use a different C++ compiler.")
 endif()
 
-find_package(TBB REQUIRED)
-
 set (ERISED_BUILD_TESTS ON)
+set (HAVE_TBB ON)
+
+if (HAVE_TBB)
+  find_package(TBB REQUIRED)
+endif ()
 
 if (ERISED_BUILD_TESTS)
   enable_testing()
   find_package(GTest REQUIRED)
   include_directories(SYSTEM ${GTEST_INCLUDE_DIRS})
 endif ()
+
+configure_file(${CMAKE_SOURCE_DIR}/cmake/templates/config.h.in
+               ${PROJECT_BINARY_DIR}/include/config.h)
+
+include_directories(${PROJECT_BINARY_DIR}/include/)
 
 add_subdirectory(erised)
