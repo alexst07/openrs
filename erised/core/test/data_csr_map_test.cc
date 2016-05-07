@@ -13,10 +13,29 @@ TEST(Sample, Sampleunit) {
                          {0,    0,   0,   0,   0.4, 0,   0,   0,   0.7},
                          {0.22, 0,   0,   0,   0.4, 0,   0,   0,   0  }};
 
+  float row_red = data.RowReduce(5, [](float a, float b) {
+    return a + b;
+  });
+
+  std::cout << "row 5 reduce: " << row_red << "\n";
+
+  float col_red = data.ColReduce(4, [](float a, float b) -> float {
+    std::cout << "a: " << a << ", b: " << b << "\n";
+    return a + b;
+  });
+
+  std::cout << "col 5 reduce: " << col_red << "\n";
+
   data.Map([](float v) -> float { return 2*v; });
 
   data.RowMap(3, [](float v) -> float { return 8*v; });
 
   data.ColMap(4, [](float v) -> float { return 10*v; });
   std::cout << data;
+
+  float r = data.Reduce([](float a, float b) {
+    return a + b;
+  });
+
+  std::cout << "\nReduce: " << r << "\n";
 }
