@@ -19,8 +19,10 @@ class DataCsrMap: public DataBase<T> {
   using MapFn = std::function<T(T)>;
   using ReduceFn = std::function<T(T,T)>;
   using VecMap = typename std::vector<std::unordered_map<size_type, T>>;
-  using ElemIter = typename VecMap::iterator;
-  using ConstElemIter = typename VecMap::const_iterator;
+  using LineIter = typename VecMap::iterator;
+  using ConstLineIter = typename VecMap::const_iterator;
+  using ColIter = typename std::unordered_map<size_type, T>::iterator;
+  using ConstColIter = typename std::unordered_map<size_type, T>::iterator;
 
   static const int INVALID_LINE;
 

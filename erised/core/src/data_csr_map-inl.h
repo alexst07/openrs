@@ -126,7 +126,20 @@ void DataCsrMap<T>::AddRow(const std::vector<T>& row) {
 
 template<typename T>
 void DataCsrMap<T>::ColMap(size_t i, MapFn fn) {
+  // Gets all lines
+  Range<LineIter> range(rows_.begin(), rows_.end());
 
+  // Executes the function fn on all elments from specific column
+  parallel_for(range, [&](Range<LineIter>& r){
+    // Scan each line and search for specific column
+    for(auto row = r.begin(); row != r.end(); ++row) {
+      auto got = row->find(i);
+
+      // Verify if column exists
+      if (got != row->end())
+        got->second = fn(got->second);
+    }
+  });
 }
 
 template<typename T>
@@ -137,10 +150,10 @@ T DataCsrMap<T>::ColReduce(size_t i, ReduceFn fn) {
 template<typename T>
 void DataCsrMap<T>::Map(const MapFn& fn) {
   // Gets all elements
-  Range<ElemIter> range(rows_.begin(), rows_.end());
+  Range<LineIter> range(rows_.begin(), rows_.end());
 
   // Executes the function fn on all elments
-  parallel_for(range, [&](Range<ElemIter>& r){
+  parallel_for(range, [&](Range<LineIter>& r){
     // Scan each line
     for(auto i = r.begin(); i!=r.end(); ++i)
       // Scan element by element from the line
@@ -156,23 +169,21 @@ T DataCsrMap<T>::Reduce(ReduceFn fn) {
 
 template<typename T>
 void DataCsrMap<T>::RowMap(size_t i, MapFn fn) {
-//   // Verifies if the line has some valid element
-//   if (rows_offset_[i] == INVALID_LINE)
-//     return;
-//
-//   // Calculates the start of the line on elments
-//   auto start = elems_.begin() + rows_offset_[i];
-//
-//   // Calculates the end of the line on elments
-//   auto end = elems_.begin() + rows_offset_[i + 1];
-//
-//   Range<ElemIter> range(start , end);
-//
-//   // Executes the function fn on elments from line i
-//   parallel_for(range, [&](Range<ElemIter>& r){
-//     for(auto i = r.begin(); i!=r.end(); ++i)
-//       *i = fn(*i);
-//   });
+  auto row_ref = rows_.begin() + i;
+  // Gets all elements from line row_ref
+  Range<LineIter> range(row_ref, row_ref + 1);
+
+  // Executes the function fn on all elments
+  parallel_for(range, [&](Range<LineIter>& r){
+    // Scan only one line, because unordered_map::iterator doesn't
+    // have any to use compare operator as > or < so, TBB parallel
+    // doesn't work correct for unordered_map, and this work arount
+    // is used to guarantee the correct compilation
+    for(auto i = r.begin(); i!=r.end(); ++i)
+      // Scan element by element from the line
+      for(const auto& e: *i)
+        i->operator[](e.first) = fn(e.second);
+  });
 }
 
 template<typename T>

@@ -15,5 +15,8 @@ TEST(Sample, Sampleunit) {
 
   data.Map([](float v) -> float { return 2*v; });
 
+  data.RowMap(3, [](float v) -> float { return 8*v; });
+
+  data.ColMap(4, [](float v) -> float { return 10*v; });
   std::cout << data;
 }
