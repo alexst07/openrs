@@ -51,11 +51,11 @@ class MatBase {
 
   virtual void ColMap(size_t i, MapFn fn) = 0;
 
-  virtual T Reduce(ReduceFn fn) = 0;
+  virtual T Reduce(const ReduceFn& fn) = 0;
 
-  virtual T RowReduce(size_t i, ReduceFn fn) = 0;
+  virtual T RowReduce(size_t i, const ReduceFn& fn) = 0;
 
-  virtual T ColReduce(size_t i, ReduceFn fn) = 0;
+  virtual T ColReduce(size_t i, const ReduceFn& fn) = 0;
 };
 
 template<typename T>

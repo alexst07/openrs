@@ -19,9 +19,9 @@ TEST(Sample, Sampleunit) {
 
   std::cout << "row 5 reduce: " << row_red << "\n";
 
-  float col_red = data.ColReduce(4, [](float a, float b) -> float {
-    std::cout << "a: " << a << ", b: " << b << "\n";
-    return a + b;
+  float col_red = data.ColReduce(5, [](float a, float b) -> float {
+    float c = a + b;
+    return c;
   });
 
   std::cout << "col 5 reduce: " << col_red << "\n";

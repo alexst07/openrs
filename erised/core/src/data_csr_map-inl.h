@@ -143,29 +143,27 @@ void DataCsrMap<T>::ColMap(size_t i, MapFn fn) {
 }
 
 template<typename T>
-T DataCsrMap<T>::ColReduce(size_t i, ReduceFn fn) {
+T DataCsrMap<T>::ColReduce(size_t i, const ReduceFn& fn) {
   // Gets all lines
   Range<LineIter> range(rows_.begin(), rows_.end());
 
-  T ret = 0;
-
   // Executes the function fn on all elments
-  return parallel_reduce(range, 0, [&](Range<LineIter>& r, T value) -> T {
-    // Scan each line
-    for(auto row = r.begin(); row != r.end(); ++row) {
-      auto got = row->find(i);
+  return parallel_reduce(range, static_cast<T>(0),
+      [&](Range<LineIter>& r, T value) -> T {
+        T ret = value;
 
-      // Verify if column exists
-      if (got != row->end()) {
-        std::cout << "value: " << got->second << "\n";
-        ret = fn(got->second, ret);
-        std::cout << "result: " << value << "\n";
-      }
-    }
+        // Scan each line
+        for(auto row = r.begin(); row != r.end(); ++row) {
+          auto got = row->find(i);
 
-    return ret;
+          // Verify if column exists
+          if (got != row->end()) {
+            ret = fn(got->second, ret);
+          }
+        }
+
+        return ret;
   }, [&fn](T a, T b) -> T {
-    std::cout << "result fn: " << fn(a, b) << "\n";
     return fn(a, b);
   });
 }
@@ -186,20 +184,21 @@ void DataCsrMap<T>::Map(const MapFn& fn) {
 }
 
 template<typename T>
-T DataCsrMap<T>::Reduce(ReduceFn fn) {
+T DataCsrMap<T>::Reduce(const ReduceFn& fn) {
   // Gets all elements
   Range<LineIter> range(rows_.begin(), rows_.end());
 
   // Executes the function fn on all elments
-  return parallel_reduce(range, 0, [&](Range<LineIter>& r, T value) -> T{
-    T ret = value;
-    // Scan each line
-    for(auto i = r.begin(); i!=r.end(); ++i)
-      // Scan element by element from the line
-      for(const auto& e: *i)
-        ret = fn(e.second, ret);
+  return parallel_reduce(range, static_cast<T>(0),
+      [&](Range<LineIter>& r, T value) -> T{
+        T ret = value;
+        // Scan each line
+        for(auto i = r.begin(); i!=r.end(); ++i)
+          // Scan element by element from the line
+          for(const auto& e: *i)
+            ret = fn(e.second, ret);
 
-    return ret;
+        return ret;
   }, [&fn](T a, T b) -> T {
     return fn(a, b);
   });
@@ -225,21 +224,22 @@ void DataCsrMap<T>::RowMap(size_t i, MapFn fn) {
 }
 
 template<typename T>
-T DataCsrMap<T>::RowReduce(size_t i, ReduceFn fn) {
+T DataCsrMap<T>::RowReduce(size_t i, const ReduceFn& fn) {
   auto row_ref = rows_.begin() + i;
   // Gets all elements from line row_ref
   Range<LineIter> range(row_ref, row_ref + 1);
 
   // Executes the function fn on all elments
-  parallel_reduce(range, 0, [&](Range<LineIter>& r, T value) -> T{
-    T ret = value;
-    // Scan each line
-    for(auto i = r.begin(); i!=r.end(); ++i)
-      // Scan element by element from the line
-      for(const auto& e: *i)
-        ret = fn(e.second, ret);
+  parallel_reduce(range, static_cast<T>(0),
+      [&](Range<LineIter>& r, T value) -> T{
+        T ret = value;
+        // Scan each line
+        for(auto i = r.begin(); i!=r.end(); ++i)
+          // Scan element by element from the line
+          for(const auto& e: *i)
+            ret = fn(e.second, ret);
 
-      return ret;
+          return ret;
   }, [&fn](T a, T b) -> T {
     return fn(a, b);
   });

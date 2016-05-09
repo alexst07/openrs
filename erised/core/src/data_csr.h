@@ -37,11 +37,11 @@ class DataCsr: public DataBase<T> {
 
   void ColMap(size_t i, MapFn fn) override;
 
-  T Reduce(ReduceFn fn) override;
+  T Reduce(const ReduceFn& fn) override;
 
-  T RowReduce(size_t i, ReduceFn fn) override;
+  T RowReduce(size_t i, const ReduceFn& fn) override;
 
-  T ColReduce(size_t i, ReduceFn fn) override;
+  T ColReduce(size_t i, const ReduceFn& fn) override;
 
   void AddRow(const std::vector<T>& row);
   void AddRow(const T* row, size_type size);
