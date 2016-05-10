@@ -2,6 +2,7 @@
 #define ERISED_CSR_MATRIX_H_
 
 #include "data_base.h"
+#include "cuda_ptr.h"
 
 #include <initializer_list>
 #include <vector>
@@ -58,9 +59,9 @@ class GpuCsr {
   friend std::ostream& operator<<(std::ostream& stream, const GpuCsr<U>& mat);
 
  private:
-  int* rows_offset_;
-  size_type* cols_index_;
-  std::vector<T> elems_;
+  cuda::cu_unique_ptr<int> rows_offset_;
+  cuda::cu_unique_ptr<size_type> cols_index_;
+  cuda::cu_unique_ptr<T> elems_;
 
   size_type size_rows_;
   size_type size_cols_;
