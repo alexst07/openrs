@@ -2,8 +2,10 @@
 
 #include "config.h"
 
+#ifdef HAVE_TBB
 #include <tbb/parallel_for.h>
 #include <tbb/parallel_reduce.h>
+#endif
 
 namespace erised {
 
