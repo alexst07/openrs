@@ -27,7 +27,8 @@ endif ()
 if (WITH_CUDA)
   find_package(CUDA REQUIRED)
   set (HAVE_CUDA ON)
-  set(CUDA_NVCC_FLAGS ${CUDA_NVCC_FLAGS}; -Xcompiler -fPIC; -O3; -gencode arch=compute_32,code=sm_32; -ccbin /usr/bin/g++ -std=c++11)
+  # TODO: improve cuda support
+  set(CUDA_NVCC_FLAGS ${CUDA_NVCC_FLAGS}; -Xcompiler -fPIC; -O3; -ccbin /usr/bin/g++ -std=c++11)
 endif ()
 
 if (BUILD_TESTS)
