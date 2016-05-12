@@ -23,7 +23,7 @@ if (BUILD_TESTS)
   endforeach()
 
   if (HAVE_CUDA)
-    file(GLOB CU_SOURCES_TEST ${CMAKE_CURRENT_SOURCE_DIR}/test/*.cc)
+    file(GLOB CU_SOURCES_TEST ${CMAKE_CURRENT_SOURCE_DIR}/test/cuda/*.cu)
     foreach(local_file ${CU_SOURCES_TEST})
       get_filename_component(local_filename ${local_file} NAME_WE)
       message("Compiling: ${local_file}")

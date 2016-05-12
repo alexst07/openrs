@@ -43,3 +43,7 @@ configure_file(${CMAKE_SOURCE_DIR}/cmake/templates/config.h.in
 include_directories(${PROJECT_BINARY_DIR}/include/)
 
 add_subdirectory(erised)
+
+message(STATUS "HAVE_TBB:  ${WITH_TBB}")
+message(STATUS "HAVE_CUDA: ${HAVE_CUDA}")
+
