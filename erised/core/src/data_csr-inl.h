@@ -168,7 +168,7 @@ void DataCsr<T>::Map(const MapFn& fn) {
   Range<ElemIter> range(elems_.begin(), elems_.end());
 
   // Executes the function fn on all elments
-  parallel_for(range, [&](Range<ElemIter>& r){
+  parallel_for(range, [&](const Range<ElemIter>& r){
     for(auto i = r.begin(); i!=r.end(); ++i)
       *i = fn(*i);
   });
@@ -194,7 +194,7 @@ void DataCsr<T>::RowMap(size_t i, MapFn fn) {
   Range<ElemIter> range(start , end);
 
   // Executes the function fn on elments from line i
-  parallel_for(range, [&](Range<ElemIter>& r){
+  parallel_for(range, [&](const Range<ElemIter>& r){
     for(auto i = r.begin(); i!=r.end(); ++i)
       *i = fn(*i);
   });

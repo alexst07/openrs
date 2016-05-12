@@ -130,7 +130,7 @@ void DataCsrMap<T>::ColMap(size_t i, MapFn fn) {
   Range<LineIter> range(rows_.begin(), rows_.end());
 
   // Executes the function fn on all elments from specific column
-  parallel_for(range, [&](Range<LineIter>& r){
+  parallel_for(range, [&](const Range<LineIter>& r){
     // Scan each line and search for specific column
     for(auto row = r.begin(); row != r.end(); ++row) {
       auto got = row->find(i);
@@ -149,7 +149,7 @@ T DataCsrMap<T>::ColReduce(size_t i, const ReduceFn& fn) {
 
   // Executes the function fn on all elments
   return parallel_reduce(range, static_cast<T>(0),
-      [&](Range<LineIter>& r, T value) -> T {
+      [&](const Range<LineIter>& r, T value) -> T {
         T ret = value;
 
         // Scan each line
@@ -174,7 +174,7 @@ void DataCsrMap<T>::Map(const MapFn& fn) {
   Range<LineIter> range(rows_.begin(), rows_.end());
 
   // Executes the function fn on all elments
-  parallel_for(range, [&](Range<LineIter>& r){
+  parallel_for(range, [&](const Range<LineIter>& r) {
     // Scan each line
     for(auto i = r.begin(); i!=r.end(); ++i)
       // Scan element by element from the line
@@ -190,7 +190,7 @@ T DataCsrMap<T>::Reduce(const ReduceFn& fn) {
 
   // Executes the function fn on all elments
   return parallel_reduce(range, static_cast<T>(0),
-      [&](Range<LineIter>& r, T value) -> T{
+      [&](const Range<LineIter>& r, T value) -> T {
         T ret = value;
         // Scan each line
         for(auto i = r.begin(); i!=r.end(); ++i)
@@ -211,7 +211,7 @@ void DataCsrMap<T>::RowMap(size_t i, MapFn fn) {
   Range<LineIter> range(row_ref, row_ref + 1);
 
   // Executes the function fn on all elments
-  return parallel_for(range, [&](Range<LineIter>& r){
+  return parallel_for(range, [&]( const Range<LineIter>& r) {
     // Scan only one line, because unordered_map::iterator doesn't
     // have any to use compare operator as > or < so, TBB parallel
     // doesn't work correct for unordered_map, and this work arount
@@ -231,7 +231,7 @@ T DataCsrMap<T>::RowReduce(size_t i, const ReduceFn& fn) {
 
   // Executes the function fn on all elments
   parallel_reduce(range, static_cast<T>(0),
-      [&](Range<LineIter>& r, T value) -> T{
+      [&](const Range<LineIter>& r, T value) -> T {
         T ret = value;
         // Scan each line
         for(auto i = r.begin(); i!=r.end(); ++i)
