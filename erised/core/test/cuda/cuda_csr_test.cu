@@ -2,5 +2,14 @@
 #include <iostream>
 
 TEST(Sample, Sampleunit) {
-  std::cout << "test\n";
+  using namespace erised;
+
+  DataCsrMap<float> data{{0.44, 0.8, 0,   0,   0,   0,   0,   0,   0  },
+                         {0,    0.8, 1.4, 0,   0,   0,   0,   0,   0  },
+                         {0.22, 0,   0,   0.7, 0.4, 0,   0,   0,   0  },
+                         {0.22, 0,   0,   0,   0,   0.7, 0.7, 0.7, 0  },
+                         {0,    0,   0,   0,   0.4, 0,   0,   0,   0.7},
+                         {0.22, 0,   0,   0,   0.4, 0,   0,   0,   0  }};
+
+  std::cout << data;
 }
