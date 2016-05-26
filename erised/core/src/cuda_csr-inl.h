@@ -18,6 +18,10 @@ namespace erised {
 
   template<typename T>
   GpuCsr<T>::GpuCsr(std::initializer_list<std::initializer_list<T>> set) {
+    std::vector<int> rows_offset;
+    std::vector<size_type> cols_index;
+    std::vector<T> elems;
+
     size_type i = 0;
     size_type max_col = 0;
     size_type num_rows = 0;
@@ -28,16 +32,16 @@ namespace erised {
       size_type i_prev = i;
 
       // Inserts the index for the next valid element
-      rows_offset_.push_back(i);
+      rows_offset.push_back(i);
 
       // Scans each element on line
       for (const auto& v: row) {
         // Inserts only valid element
         if (v != 0) {
-          elems_.push_back(v);
+          elems.push_back(v);
 
           // Inserts index of the column for the valid element
-          cols_index_.push_back(icol);
+          cols_index.push_back(icol);
 
           // Updates the index for element
           i++;
@@ -56,11 +60,15 @@ namespace erised {
 
       // If there is no valid value on line, assigns -1 as offset of this line
       if (i == i_prev)
-        rows_offset_.back() = INVALID_LINE;
+        rows_offset.back() = INVALID_LINE;
 
       // Count each line
       num_rows++;
     }
+
+    memcpy(rows_offset_, rows_offset.data, rows_offset.size()*sizeof(int));
+    memcpy(cols_index_, cols_index.data, rows_offset.size()*sizeof(size_type));
+    memcpy(elems_, elems.data, elems.size()*sizeof(T));
 
     // Assigns the max_col as the numbers of column for the matrix
     size_cols_ = max_col;
