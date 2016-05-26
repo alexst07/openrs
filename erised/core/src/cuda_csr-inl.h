@@ -8,16 +8,16 @@ namespace erised {
 
   // define const variables
   template<typename T>
-  const int DataCsr<T>::INVALID_LINE = -1;
+  const int GpuCsr<T>::INVALID_LINE = -1;
 
   template<typename T>
-  DataCsr<T>::DataCsr()
+  GpuCsr<T>::GpuCsr()
   : size_rows_(0)
   , size_cols_(0) {
   }
 
   template<typename T>
-  DataCsr<T>::DataCsr(std::initializer_list<std::initializer_list<T>> set) {
+  GpuCsr<T>::GpuCsr(std::initializer_list<std::initializer_list<T>> set) {
     size_type i = 0;
     size_type max_col = 0;
     size_type num_rows = 0;
@@ -70,49 +70,117 @@ namespace erised {
   }
 
   template<typename T>
-  DataCsr<T>::DataCsr(size_type rows, size_type cols)
-  : rows_offset_(rows + 1)
-  , size_rows_(rows)
-  , size_cols_(cols) {
+  GpuCsr<T>::GpuCsr(size_type rows, size_type nelems)
+  : size_rows_(rows)
+  , num_elems_(nelems) {
+    alloc(size_rows_, num_elems_);
   }
 
   template<typename T>
   GpuCsr<T>::GpuCsr(const GpuCsr<T>& m)
-  : rows_offset_(m.rows_offset_)
-  , cols_index_(m.cols_index_)
-  , elems_(m.elems_) {
+  : size_rows_(m.size_rows_)
+  , num_elems_(m.num_elems_)
+  , size_cols_(m.size_cols_) {
+    free();
+
+    cudaMemcpy(rows_offset_, m.rows_offset_, size_rows_, cudaMemcpyDeviceToDevice);
+    cudaMemcpy(cols_index_, m.cols_index_, size_rows_, cudaMemcpyDeviceToDevice);
+    cudaMemcpy(elems_, m.elems_, size_rows_, cudaMemcpyDeviceToDevice);
   }
 
   template<typename T>
-  DataCsr<T>::DataCsr(DataCsr<T>&& m)
-  : rows_offset_(std::move(m.rows_offset_))
-  , cols_index_(std::move(m.cols_index_))
-  , elems_(std::move(m.elems_)) {
+  GpuCsr<T>::GpuCsr(GpuCsr<T>&& m)
+  : size_rows_(m.size_rows_)
+  , num_elems_(m.num_elems_)
+  , size_cols_(m.size_cols_) {
+    m.size_rows_ = 0;
+    m.num_elems_ = 0;
+    m.size_cols_ = 0;
+
+    rows_offset_ = m.rows_offset_;
+    cols_index_ = m.cols_index_;
+    elems_ = m.elems_;
+
+    m.rows_offset_ = nullptr;
+    m.cols_index_ = nullptr;
+    m.elems_ = nullptr;
   }
 
   template<typename T>
-  DataCsr<T>& DataCsr<T>::operator=(const DataCsr<T>& m) {
+  GpuCsr<T>& GpuCsr<T>::operator=(const GpuCsr<T>& m) {
     // self-assignment check
     if (this != &m) {
       rows_offset_ = m.rows_offset_;
-      cols_index_ = m.cols_index_;
-      elems_ = m.elems_;
+      size_cols_ = m.size_cols_;
+      num_elems_ = m.num_elems_;
+
+      free();
+
+      cudaMemcpy(rows_offset_, m.rows_offset_, size_rows_, cudaMemcpyDeviceToDevice);
+      cudaMemcpy(cols_index_, m.cols_index_, size_rows_, cudaMemcpyDeviceToDevice);
+      cudaMemcpy(elems_, m.elems_, size_rows_, cudaMemcpyDeviceToDevice);
     }
 
     return *this;
   }
 
   template<typename T>
-  DataCsr<T>& DataCsr<T>::operator=(DataCsr<T>&& m) {
-    rows_offset_ = std::move(m.rows_offset_);
-    cols_index_ = std::move(m.cols_index_);
-    elems_ = std::move(m.elems_);
+  GpuCsr<T>& GpuCsr<T>::operator=(GpuCsr<T>&& m) {
+    rows_offset_ = m.rows_offset_;
+    size_cols_ = m.size_cols_;
+    num_elems_ = m.num_elems_;
+
+    m.size_rows_ = 0;
+    m.num_elems_ = 0;
+    m.size_cols_ = 0;
+
+    rows_offset_ = m.rows_offset_;
+    cols_index_ = m.cols_index_;
+    elems_ = m.elems_;
+
+    m.rows_offset_ = nullptr;
+    m.cols_index_ = nullptr;
+    m.elems_ = nullptr;
 
     return *this;
   }
 
+  template<typename T>
+  GpuCsr<T>& GpuCsr<T>::alloc(size_type nrows, size_type nelems) {
+    if (rows_offset_ == nullptr)
+      cudaHostAlloc((void**)&rows_offset_, nrows*sizeof(int),
+          cudaHostAllocWriteCombined | cudaHostAllocMapped);
+
+    if (cols_index_ == nullptr)
+      cudaHostAlloc((void**)&cols_index_, nelems*sizeof(size_type),
+          cudaHostAllocWriteCombined | cudaHostAllocMapped);
+
+    if (elems_ == nullptr)
+      cudaHostAlloc((void**)&elems_, nelems*sizeof(T),
+          cudaHostAllocWriteCombined | cudaHostAllocMapped);
+  }
+
+  template<typename T>
+  GpuCsr<T>& GpuCsr<T>::free() {
+    if (rows_offset_ != NULL) {
+      cudaFreeHost(rows_offset_);
+      rows_offset_ = nullptr;
+    }
+
+    if (cols_index_ != NULL) {
+      cudaFreeHost(cols_index_);
+      cols_index_ = nullptr;
+    }
+
+    if (elems_ != NULL) {
+      cudaFreeHost(elems_);
+      elems_ = nullptr;
+    }
+
+  }
+
   template<typename U>
-  std::ostream& operator<<(std::ostream& stream, const DataCsr<U>& mat) {
+  std::ostream& operator<<(std::ostream& stream, const GpuCsr<U>& mat) {
     stream << "rows vector: ";
     for (const auto& r: mat.rows_offset_) {
       stream << r << " ";
@@ -133,37 +201,37 @@ namespace erised {
   }
 
   template<typename T>
-  void DataCsr<T>::AddCol(const T* col, size_type size) {
+  void GpuCsr<T>::AddCol(const T* col, size_type size) {
 
   }
 
   template<typename T>
-  void DataCsr<T>::AddCol(const std::vector<T>& col) {
+  void GpuCsr<T>::AddCol(const std::vector<T>& col) {
 
   }
 
   template<typename T>
-  void DataCsr<T>::AddRow(const T* row, size_type size) {
+  void GpuCsr<T>::AddRow(const T* row, size_type size) {
 
   }
 
   template<typename T>
-  void DataCsr<T>::AddRow(const std::vector<T>& row) {
+  void GpuCsr<T>::AddRow(const std::vector<T>& row) {
 
   }
 
   template<typename T>
-  void DataCsr<T>::ColMap(size_t i, MapFn fn) {
+  void GpuCsr<T>::ColMap(size_t i, MapFn fn) {
 
   }
 
   template<typename T>
-  T DataCsr<T>::ColReduce(size_t i, const ReduceFn& fn) {
+  T GpuCsr<T>::ColReduce(size_t i, const ReduceFn& fn) {
 
   }
 
   template<typename T>
-  void DataCsr<T>::Map(const MapFn& fn) {
+  void GpuCsr<T>::Map(const MapFn& fn) {
     // Gets all elements
     Range<ElemIter> range(elems_.begin(), elems_.end());
 
@@ -175,33 +243,17 @@ namespace erised {
   }
 
   template<typename T>
-  T DataCsr<T>::Reduce(const ReduceFn& fn) {
+  T GpuCsr<T>::Reduce(const ReduceFn& fn) {
 
   }
 
   template<typename T>
-  void DataCsr<T>::RowMap(size_t i, MapFn fn) {
-    // Verifies if the line has some valid element
-    if (rows_offset_[i] == INVALID_LINE)
-      return;
+  void GpuCsr<T>::RowMap(size_t i, MapFn fn) {
 
-    // Calculates the start of the line on elments
-    auto start = elems_.begin() + rows_offset_[i];
-
-    // Calculates the end of the line on elments
-    auto end = elems_.begin() + rows_offset_[i + 1];
-
-    Range<ElemIter> range(start , end);
-
-    // Executes the function fn on elments from line i
-    parallel_for(range, [&](Range<ElemIter>& r){
-      for(auto i = r.begin(); i!=r.end(); ++i)
-        *i = fn(*i);
-    });
   }
 
   template<typename T>
-  T DataCsr<T>::RowReduce(size_t i, const ReduceFn& fn) {
+  T GpuCsr<T>::RowReduce(size_t i, const ReduceFn& fn) {
 
   }
 
