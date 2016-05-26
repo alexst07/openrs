@@ -1,8 +1,7 @@
 #pragma once
-#define ERISED_CSR_MATRIX_H_
+#define ERISED_CUDA_CSR_MATRIX_H_
 
 #include "data_base.h"
-#include "cuda_ptr.h"
 
 #include <initializer_list>
 #include <vector>
@@ -73,4 +72,4 @@ class GpuCsr {
 
 }}
 
-#include <data_csr-inl.h>
+#include "cuda_csr-inl.h"

@@ -1,10 +1,8 @@
-#ifndef ERISED_CSR_MATRIX_H_
+#ifndef ERISED_CUDA_CSR_MATRIX_H_
 #error "This should only be included by data_csr.h"
 #endif
 
-#include "parallel.h"
-
-namespace erised {
+namespace erised { namespace cuda {
 
   // define const variables
   template<typename T>
@@ -256,4 +254,4 @@ namespace erised {
 
   }
 
-}
+}}
