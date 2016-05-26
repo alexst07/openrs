@@ -184,26 +184,25 @@ namespace erised {
       cudaFreeHost(elems_);
       elems_ = nullptr;
     }
-
   }
 
   template<typename U>
   std::ostream& operator<<(std::ostream& stream, const GpuCsr<U>& mat) {
     stream << "rows vector: ";
-    for (const auto& r: mat.rows_offset_) {
-      stream << r << " ";
+    for (int i = 0; i < size_rows_; i++) {
+      stream << rows_offset_[i] << " ";
     }
     stream << "\n";
 
     stream << "cols index: ";
-    for (const auto& i: mat.cols_index_) {
-      stream << i << " ";
+    for (int i = 0; i < num_elems_; i++) {
+      stream << cols_index_[i] << " ";
     }
     stream << "\n";
 
     stream << "elems: ";
-    for (const auto& e: mat.elems_) {
-      stream << e << " ";
+    for (int i = 0; i < num_elems_; i++) {
+      stream << elems_[i] << " ";
     }
     stream << "\n";
   }
@@ -240,14 +239,6 @@ namespace erised {
 
   template<typename T>
   void GpuCsr<T>::Map(const MapFn& fn) {
-    // Gets all elements
-    Range<ElemIter> range(elems_.begin(), elems_.end());
-
-    // Executes the function fn on all elments
-    parallel_for(range, [&](Range<ElemIter>& r){
-      for(auto i = r.begin(); i!=r.end(); ++i)
-        *i = fn(*i);
-    });
   }
 
   template<typename T>
