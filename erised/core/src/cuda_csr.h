@@ -31,22 +31,22 @@ class GpuCsr {
   GpuCsr<T>& operator=(GpuCsr<T>&& m);
 
   template<typename MapFn>
-  void Map(MapFn&& fn) override;
+  void Map(MapFn&& fn);
 
   template<typename MapFn>
-  void RowMap(size_t i, MapFn&& fn) override;
+  void RowMap(size_t i, MapFn&& fn);
 
   template<typename MapFn>
-  void ColMap(size_t i, MapFn&& fn) override;
+  void ColMap(size_t i, MapFn&& fn);
 
   template<typename ReduceFn>
-  T Reduce(ReduceFn&& fn) override;
+  T Reduce(ReduceFn&& fn);
 
   template<typename ReduceFn>
-  T RowReduce(size_t i, ReduceFn&& fn) override;
+  T RowReduce(size_t i, ReduceFn&& fn);
 
   template<typename ReduceFn>
-  T ColReduce(size_t i, ReduceFn&& fn) override;
+  T ColReduce(size_t i, ReduceFn&& fn);
 
   void AddRow(const std::vector<T>& row);
   void AddRow(const T* row, size_type size);

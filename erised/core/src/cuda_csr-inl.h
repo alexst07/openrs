@@ -64,9 +64,9 @@ namespace erised { namespace cuda {
       num_rows++;
     }
 
-    memcpy(rows_offset_, rows_offset.data, rows_offset.size()*sizeof(int));
-    memcpy(cols_index_, cols_index.data, rows_offset.size()*sizeof(size_type));
-    memcpy(elems_, elems.data, elems.size()*sizeof(T));
+    memcpy(rows_offset_, rows_offset.data(), rows_offset.size()*sizeof(int));
+    memcpy(cols_index_, cols_index.data(), rows_offset.size()*sizeof(size_type));
+    memcpy(elems_, elems.data(), elems.size()*sizeof(T));
 
     // Assigns the max_col as the numbers of column for the matrix
     size_cols_ = max_col;
@@ -152,7 +152,7 @@ namespace erised { namespace cuda {
   }
 
   template<typename T>
-  GpuCsr<T>& GpuCsr<T>::alloc(size_type nrows, size_type nelems) {
+  void GpuCsr<T>::alloc(size_type nrows, size_type nelems) {
     if (rows_offset_ == nullptr)
       cudaHostAlloc((void**)&rows_offset_, nrows*sizeof(int),
           cudaHostAllocWriteCombined | cudaHostAllocMapped);
@@ -167,7 +167,7 @@ namespace erised { namespace cuda {
   }
 
   template<typename T>
-  GpuCsr<T>& GpuCsr<T>::free() {
+  void GpuCsr<T>::free() {
     if (rows_offset_ != NULL) {
       cudaFreeHost(rows_offset_);
       rows_offset_ = nullptr;
@@ -187,22 +187,24 @@ namespace erised { namespace cuda {
   template<typename U>
   std::ostream& operator<<(std::ostream& stream, const GpuCsr<U>& mat) {
     stream << "rows vector: ";
-    for (int i = 0; i < size_rows_; i++) {
-      stream << rows_offset_[i] << " ";
+    for (int i = 0; i < mat.size_rows_; i++) {
+      stream << mat.rows_offset_[i] << " ";
     }
     stream << "\n";
 
     stream << "cols index: ";
-    for (int i = 0; i < num_elems_; i++) {
-      stream << cols_index_[i] << " ";
+    for (int i = 0; i < mat.num_elems_; i++) {
+      stream << mat.cols_index_[i] << " ";
     }
     stream << "\n";
 
     stream << "elems: ";
-    for (int i = 0; i < num_elems_; i++) {
-      stream << elems_[i] << " ";
+    for (int i = 0; i < mat.num_elems_; i++) {
+      stream << mat.elems_[i] << " ";
     }
     stream << "\n";
+
+    return stream;
   }
 
   template<typename T>
@@ -226,31 +228,37 @@ namespace erised { namespace cuda {
   }
 
   template<typename T>
-  void GpuCsr<T>::ColMap(size_t i, MapFn fn) {
+  template<typename MapFn>
+  void GpuCsr<T>::ColMap(size_t i, MapFn&& fn) {
 
   }
 
   template<typename T>
-  T GpuCsr<T>::ColReduce(size_t i, const ReduceFn& fn) {
+  template<typename ReduceFn>
+  T GpuCsr<T>::ColReduce(size_t i, ReduceFn&& fn) {
+
+  }
+
+  template<typename T> 
+  template<typename MapFn>
+  void GpuCsr<T>::Map(MapFn&& fn) {
+  }
+
+  template<typename T> 
+  template<typename ReduceFn>
+  T GpuCsr<T>::Reduce(ReduceFn&& fn) {
+
+  }
+
+  template<typename T> 
+  template<typename MapFn>
+  void GpuCsr<T>::RowMap(size_t i, MapFn&& fn) {
 
   }
 
   template<typename T>
-  void GpuCsr<T>::Map(const MapFn& fn) {
-  }
-
-  template<typename T>
-  T GpuCsr<T>::Reduce(const ReduceFn& fn) {
-
-  }
-
-  template<typename T>
-  void GpuCsr<T>::RowMap(size_t i, MapFn fn) {
-
-  }
-
-  template<typename T>
-  T GpuCsr<T>::RowReduce(size_t i, const ReduceFn& fn) {
+  template<typename ReduceFn>
+  T GpuCsr<T>::RowReduce(size_t i, ReduceFn&& fn) {
 
   }
 
