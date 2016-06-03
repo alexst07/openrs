@@ -64,15 +64,28 @@ namespace erised { namespace cuda {
       num_rows++;
     }
 
-    memcpy(rows_offset_, rows_offset.data(), rows_offset.size()*sizeof(int));
-    memcpy(cols_index_, cols_index.data(), rows_offset.size()*sizeof(size_type));
+    // Assigns the number of rows
+    size_rows_ = rows_offset.size();
+
+    // Assigns the number of elements
+    num_elems_ = elems.size();
+
+    // Allocates memory on device
+    alloc(size_rows_, num_elems_);
+
+    for (const auto v: rows_offset)
+      std::cout << v << ", ";
+
+    memcpy(cols_index_, cols_index.data(), cols_index.size()*sizeof(size_type));
     memcpy(elems_, elems.data(), elems.size()*sizeof(T));
+    memcpy(rows_offset_, rows_offset.data(), size_rows_*sizeof(int));
+
+    for (int i = 0; i < size_rows_; i++) {
+      std::cout << rows_offset_[i] << " ";
+    }
 
     // Assigns the max_col as the numbers of column for the matrix
     size_cols_ = max_col;
-
-    // Assigns the number of rows
-    size_rows_ = num_rows;
   }
 
   template<typename T>
@@ -186,21 +199,22 @@ namespace erised { namespace cuda {
 
   template<typename U>
   std::ostream& operator<<(std::ostream& stream, const GpuCsr<U>& mat) {
+    stream << "rows size: " << mat.size_rows_ << "\n";
     stream << "rows vector: ";
     for (int i = 0; i < mat.size_rows_; i++) {
-      stream << mat.rows_offset_[i] << " ";
+      stream << reinterpret_cast<int*>(mat.rows_offset_)[i] << " ";
     }
     stream << "\n";
 
     stream << "cols index: ";
     for (int i = 0; i < mat.num_elems_; i++) {
-      stream << mat.cols_index_[i] << " ";
+      stream << reinterpret_cast<typename GpuCsr<U>::size_type*>(mat.cols_index_)[i] << " ";
     }
     stream << "\n";
 
     stream << "elems: ";
     for (int i = 0; i < mat.num_elems_; i++) {
-      stream << mat.elems_[i] << " ";
+      stream << reinterpret_cast<U*>(mat.elems_)[i] << " ";
     }
     stream << "\n";
 
