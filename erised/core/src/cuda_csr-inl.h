@@ -15,7 +15,11 @@ namespace erised { namespace cuda {
   }
 
   template<typename T>
-  GpuCsr<T>::GpuCsr(std::initializer_list<std::initializer_list<T>> set) {
+  GpuCsr<T>::GpuCsr(std::initializer_list<std::initializer_list<T>> set)
+    : rows_offset_(nullptr)
+    , cols_index_(nullptr)
+    , elems_(nullptr)
+  {
     std::vector<int> rows_offset;
     std::vector<size_type> cols_index;
     std::vector<T> elems;
@@ -73,8 +77,8 @@ namespace erised { namespace cuda {
     // Allocates memory on device
     alloc(size_rows_, num_elems_);
 
+    cudaMemcpy(elems_, elems.data(), num_elems_*sizeof(T), cudaMemcpyHostToDevice);
     cudaMemcpy(cols_index_, cols_index.data(), cols_index.size()*sizeof(size_type), cudaMemcpyHostToDevice);
-    cudaMemcpy(elems_, elems.data(), elems.size()*sizeof(T), cudaMemcpyHostToDevice);
     cudaMemcpy(rows_offset_, rows_offset.data(), size_rows_*sizeof(int), cudaMemcpyHostToDevice);
 
     // Assigns the max_col as the numbers of column for the matrix
@@ -189,14 +193,14 @@ namespace erised { namespace cuda {
 
   template<typename U>
   std::ostream& operator<<(std::ostream& stream, const GpuCsr<U>& mat) {
-    int *rows_offset;
-    typename GpuCsr<U>::size_type* cols_index;
-    U* elems;
+    int *rows_offset = new int[mat.size_rows_];
+    typename GpuCsr<U>::size_type* cols_index = new typename GpuCsr<U>::size_type[mat.num_elems_];
+    U* elems = new U[mat.num_elems_];
 
     cudaMemcpy(rows_offset, mat.rows_offset_ , sizeof(int) * mat.size_rows_, cudaMemcpyDeviceToHost);
     cudaMemcpy(cols_index, mat.cols_index_ , sizeof(typename GpuCsr<U>::size_type)
         * mat.num_elems_, cudaMemcpyDeviceToHost);
-    cudaMemcpy(elems, elems_ , sizeof(U) * mat.num_elems_, cudaMemcpyDeviceToHost);
+    cudaMemcpy(elems, mat.elems_ , sizeof(U) * mat.num_elems_, cudaMemcpyDeviceToHost);
 
     stream << "rows size: " << mat.size_rows_ << "\n";
     stream << "rows vector: ";
