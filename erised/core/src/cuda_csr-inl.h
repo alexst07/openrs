@@ -259,6 +259,7 @@ namespace erised { namespace cuda {
   template<typename T>
   template<typename MapFn>
   void GpuCsr<T>::Map(MapFn&& fn) {
+    CuMap<<<ceil(num_elems_/10), 10>>>(fn);
   }
 
   template<typename T>
