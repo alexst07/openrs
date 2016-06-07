@@ -13,5 +13,9 @@ TEST(Sample, Sampleunit) {
                 	   {0.22, 0,   0,   0,   0.4, 0,   0,   0,   0  }};
 
   std::cout << data;
+
+  data.Map([](float v) -> float { return 2*v; });
+
+  std::cout << data;
 }
 
