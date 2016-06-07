@@ -1,4 +1,5 @@
 #include <gtest/gtest.h>
+
 #include <iostream>
 #include "cuda_csr.h"
 
@@ -13,8 +14,8 @@ TEST(Sample, Sampleunit) {
                 	   {0.22, 0,   0,   0,   0.4, 0,   0,   0,   0  }};
 
   std::cout << data;
-
-  data.Map([](float v) -> float { return 2*v; });
+  // TODO: ON the future this feature will be supported by CUDA8
+  //data.Map([] __device__ __host__(float v) -> float { return 2*v; });
 
   std::cout << data;
 }

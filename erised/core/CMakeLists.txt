@@ -4,7 +4,7 @@ file(GLOB SOURCES ${CMAKE_CURRENT_SOURCE_DIR}/src/*.cc)
 
 if (HAVE_CUDA)
   file(GLOB CU_SOURCES ${CMAKE_CURRENT_SOURCE_DIR}/src/cuda/*.cu)
-  if (${SOURCES} and ${CU_SOURCES})
+  if (SOURCES AND CU_SOURCES)
     cuda_add_library(erised_core ${SOURCES} ${CU_SOURCES})
   endif ()
 else ()

@@ -2,6 +2,7 @@
 #define ERISED_CUDA_CSR_MATRIX_H_
 
 #include "data_base.h"
+#include "cuda/cuda_csr_func.h"
 
 #include <initializer_list>
 #include <vector>
@@ -65,9 +66,9 @@ class GpuCsr {
   size_type* cols_index_;
   T* elems_;
 
-  __host__ __device__ size_type size_rows_;
-  __host__ __device__ size_type size_cols_;
-  __host__ __device__ size_type num_elems_;
+  size_type size_rows_;
+  size_type size_cols_;
+  size_type num_elems_;
 };
 
 }}
