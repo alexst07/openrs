@@ -69,5 +69,10 @@ class MatBase {
 template<typename T>
 using DataBase = MatBase<T, 2>;
 
+enum class Axis{
+  ROW,
+  COL
+};
+
 }
 #endif //__ERISED_MATRIX_BASE__
