@@ -51,6 +51,12 @@ class DataCsrMap: public DataBase<T> {
 
   T operator()(size_type x, size_type y);
 
+  size_t NumElements() override;
+
+  size_t NumElementsLine(size_t i) override;
+
+  size_t NumElementsCol(size_t i) override;
+
   template<typename U>
   friend std::ostream& operator<<(std::ostream& stream, const DataCsrMap<U>& mat);
 

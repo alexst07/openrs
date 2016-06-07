@@ -58,6 +58,12 @@ class MatBase {
   virtual T ColReduce(size_t i, const ReduceFn& fn) = 0;
 
   virtual T operator()(const Pos<order>& pos) = 0;
+
+  virtual size_t NumElements() = 0;
+
+  virtual size_t NumElementsLine(size_t i) = 0;
+
+  virtual size_t NumElementsCol(size_t i) = 0;
 };
 
 template<typename T>

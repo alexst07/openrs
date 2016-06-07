@@ -42,4 +42,8 @@ TEST(Sample, Sampleunit) {
   std::cout << "\n(2,3): " << data({2,3}) << "\n";
   std::cout << "\n(1,1): " << data(1,1) << "\n";
   std::cout << "\n(2,0): " << data(2,2) << "\n";
+
+  std::cout << "\nNum elements: " << data.NumElements() << "\n";
+  std::cout << "\nNum elements line 3: " << data.NumElementsLine(3) << "\n";
+  std::cout << "\nNum elements col 4: " << data.NumElementsCol(4) << "\n";
 }

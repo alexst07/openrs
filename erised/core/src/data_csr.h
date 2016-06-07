@@ -45,6 +45,12 @@ class DataCsr: public DataBase<T> {
 
   T operator()(const Pos<DataBase<T>::order>& pos) override {};
 
+  size_t NumElements() override {};
+
+  size_t NumElementsLine(size_t i) override {};
+
+  size_t NumElementsCol(size_t i) override {};
+
   void AddRow(const std::vector<T>& row);
   void AddRow(const T* row, size_type size);
 

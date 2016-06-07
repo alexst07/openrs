@@ -136,6 +136,39 @@ T DataCsrMap<T>::operator()(size_type x, size_type y) {
 }
 
 template<typename T>
+size_t DataCsrMap<T>::NumElements() {
+  size_t num_elems = 0;
+
+  // Sum the number of elements on map for each row
+  for (const auto& r: rows_) {
+    num_elems += r.size();
+  }
+
+  return num_elems;
+}
+
+template<typename T>
+size_t DataCsrMap<T>::NumElementsLine(size_t i) {
+  return rows_.at(i).size();
+}
+
+template<typename T>
+size_t DataCsrMap<T>::NumElementsCol(size_t i) {
+  size_t num_elems = 0;
+
+  // Gets the map of each line on the array
+  for (const auto& r: rows_) {
+    // Search the if the elements exists on the map
+    // if it exist increment num_elems
+    auto it = r.find(i);
+    if (it != r.end())
+      num_elems++;
+  }
+
+  return num_elems;
+}
+
+template<typename T>
 void DataCsrMap<T>::ColMap(size_t i, MapFn fn) {
   // Gets all lines
   Range<LineIter> range(rows_.begin(), rows_.end());
