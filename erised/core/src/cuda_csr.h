@@ -61,12 +61,6 @@ class GpuCsr {
   void alloc(size_type nrows, size_type nelems);
   void free();
 
-  template<typename MapFn>
-  __global__  void CuMap(MapFn&& fn);
-
-  template<typename MapFn>
-  __global__  void CuRowMap(size_t i, MapFn&& fn);
-
   int* rows_offset_;
   size_type* cols_index_;
   T* elems_;
