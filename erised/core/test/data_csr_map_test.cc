@@ -14,13 +14,13 @@ TEST(Sample, Sampleunit) {
                          {0.22, 0,   0,   0,   0.4, 0,   0,   0,   0  }};
 
   float row_red = data.RowReduce(5, [](float a, float b) {
-    return a + b;
+    return 2*a + b;
   });
 
   std::cout << "row 5 reduce: " << row_red << "\n";
 
   float col_red = data.ColReduce(5, [](float a, float b) -> float {
-    float c = a + b;
+    float c = 3*a + b;
     return c;
   });
 
@@ -38,4 +38,8 @@ TEST(Sample, Sampleunit) {
   });
 
   std::cout << "\nReduce: " << r << "\n";
+
+  std::cout << "\n(2,3): " << data({2,3}) << "\n";
+  std::cout << "\n(1,1): " << data(1,1) << "\n";
+  std::cout << "\n(2,0): " << data(2,2) << "\n";
 }

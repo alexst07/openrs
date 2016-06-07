@@ -43,6 +43,8 @@ class DataCsr: public DataBase<T> {
 
   T ColReduce(size_t i, const ReduceFn& fn) override;
 
+  T operator()(const Pos<DataBase<T>::order>& pos) override {};
+
   void AddRow(const std::vector<T>& row);
   void AddRow(const T* row, size_type size);
 

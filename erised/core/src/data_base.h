@@ -15,7 +15,7 @@ class Pos<2> {
  public:
   Pos(size_t x, size_t y)
     : x_(x)
-    , y_(x) {}
+    , y_(y) {}
 
   size_t X() const {
     return x_;
@@ -56,6 +56,8 @@ class MatBase {
   virtual T RowReduce(size_t i, const ReduceFn& fn) = 0;
 
   virtual T ColReduce(size_t i, const ReduceFn& fn) = 0;
+
+  virtual T operator()(const Pos<order>& pos) = 0;
 };
 
 template<typename T>

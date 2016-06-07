@@ -105,23 +105,34 @@ std::ostream& operator<<(std::ostream& stream, const DataCsrMap<U>& mat) {
 }
 
 template<typename T>
-void DataCsrMap<T>::AddCol(const T* col, size_type size) {
+T DataCsrMap<T>::operator()(const Pos<DataBase<T>::order>& pos) {
+  size_t x = pos.X();
+  size_t y = pos.Y();
 
+  std::cout << "x: " << x << "y: " << y << "\n";
+
+  // Check if is a valid coordenate
+  if (x > size_rows_)
+    throw std::out_of_range("row x is greater or equal than its x size");
+
+  if (y > size_cols_)
+    throw std::out_of_range("col y is greater or equal than its y size");
+
+  // Gets the line of vector
+  auto map_row = rows_.at(x);
+
+  // Find the col on the map and return it, if it
+  // doesn't exist, return invalid value
+  auto it = map_row.find(y);
+  if (it != map_row.end())
+    return it->second;
+
+  return 0;
 }
 
 template<typename T>
-void DataCsrMap<T>::AddCol(const std::vector<T>& col) {
-
-}
-
-template<typename T>
-void DataCsrMap<T>::AddRow(const T* row, size_type size) {
-
-}
-
-template<typename T>
-void DataCsrMap<T>::AddRow(const std::vector<T>& row) {
-
+T DataCsrMap<T>::operator()(size_type x, size_type y) {
+  return this->operator()({x, y});
 }
 
 template<typename T>

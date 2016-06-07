@@ -47,11 +47,9 @@ class DataCsrMap: public DataBase<T> {
 
   T ColReduce(size_t i, const ReduceFn& fn) override;
 
-  void AddRow(const std::vector<T>& row);
-  void AddRow(const T* row, size_type size);
+  T operator()(const Pos<DataBase<T>::order>& pos) override;
 
-  void AddCol(const std::vector<T>& col);
-  void AddCol(const T* col, size_type size);
+  T operator()(size_type x, size_type y);
 
   template<typename U>
   friend std::ostream& operator<<(std::ostream& stream, const DataCsrMap<U>& mat);
