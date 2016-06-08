@@ -16,7 +16,9 @@ T Avarage(const Data<T>& data) {
   if (num_elems == 0)
     throw std::overflow_error("Divide by zero exception");
 
-  return T/ static_cast<T>(num_elems);
+  // Make the cast from size_t to T, T MUST be a typename
+  // where this kind of conversion is possible
+  return sum/ static_cast<T>(num_elems);
 }
 
 template<class T, template<typename> class Data>
@@ -24,16 +26,20 @@ T Avarage(const Data<T>& data, size_t i, Axis axis) {
   size_t num_elems = 0;
   T sum;
 
-  if (axis == Axis.ROW) {
+  if (axis == Axis::ROW) {
+    // Count the number of elements on row i
     num_elems = data.NumElementsLine(i);
 
-    sum = data.RowReduce([](float a, float b) {
+    // Sum all valid elements from row i
+    sum = data.RowReduce(i, [](float a, float b) {
       return a + b;
     });
   } else {
+    // Count the number of elements on col i
     num_elems = data.NumElementsCol(i);
 
-    sum = data.ColReduce([](float a, float b) {
+    // Sum all valid elements from col i
+    sum = data.ColReduce(i, [](float a, float b) {
       return a + b;
     });
   }
@@ -41,7 +47,9 @@ T Avarage(const Data<T>& data, size_t i, Axis axis) {
   if (num_elems == 0)
     throw std::overflow_error("Divide by zero exception");
 
-  return T/ static_cast<T>(num_elems);
+  // Make the cast from size_t to T, T MUST be a typename
+  // where this kind of conversion is possible
+  return sum/ static_cast<T>(num_elems);
 }
 
 }
