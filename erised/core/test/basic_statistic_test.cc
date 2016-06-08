@@ -22,4 +22,9 @@ TEST(Sample, Sampleunit) {
   std::cout << "Avarage: " << res << "\n"
             << "Avarage row 2: " << res_l << "\n"
             << "Avarage col 0: " << res_c << "\n";
+
+  float var_r = Variance(data, 2, Axis::ROW);
+  float var_c = Variance(data, 0, Axis::COL);
+  std::cout << "Variance row 2: " << var_r << "\n"
+            << "Variance col 0: " << var_c << "\n";
 }
