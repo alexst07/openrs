@@ -59,12 +59,19 @@ class DataCsrMap: public DataBase<T> {
 
   T Min(size_t i, Axis axis);
 
+  T Max(size_t i, Axis axis);
+
   template<typename U>
   friend std::ostream& operator<<(std::ostream& stream, const DataCsrMap<U>& mat);
 
  private:
   T MinElemRow(size_t i);
+
   T MinElemCol(size_t i);
+
+  T MaxElemRow(size_t i);
+
+  T MaxElemCol(size_t i);
 
   VecMap rows_;
 

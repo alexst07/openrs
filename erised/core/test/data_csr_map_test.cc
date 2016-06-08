@@ -15,6 +15,8 @@ TEST(Sample, Sampleunit) {
 
   std::cout << "\nMin elements col 0: " << data.Min(0, Axis::COL) << "\n";
   std::cout << "\nMin elements row 2: " << data.Min(2, Axis::ROW) << "\n";
+  std::cout << "\nMax elements col 0: " << data.Max(0, Axis::COL) << "\n";
+  std::cout << "\nMax elements row 2: " << data.Max(2, Axis::ROW) << "\n";
 
   float row_red = data.RowReduce(5, [](float a, float b) {
     return 2*a + b;
