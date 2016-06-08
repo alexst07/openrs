@@ -105,7 +105,7 @@ std::ostream& operator<<(std::ostream& stream, const DataCsrMap<U>& mat) {
 }
 
 template<typename T>
-T DataCsrMap<T>::operator()(const Pos<DataBase<T>::order>& pos) {
+T DataCsrMap<T>::operator()(const Pos<DataBase<T>::order>& pos) const {
   size_t x = pos.X();
   size_t y = pos.Y();
 
@@ -131,12 +131,12 @@ T DataCsrMap<T>::operator()(const Pos<DataBase<T>::order>& pos) {
 }
 
 template<typename T>
-T DataCsrMap<T>::operator()(size_type x, size_type y) {
+T DataCsrMap<T>::operator()(size_type x, size_type y) const {
   return this->operator()({x, y});
 }
 
 template<typename T>
-size_t DataCsrMap<T>::NumElements() {
+size_t DataCsrMap<T>::NumElements() const {
   size_t num_elems = 0;
 
   // Sum the number of elements on map for each row
@@ -148,12 +148,12 @@ size_t DataCsrMap<T>::NumElements() {
 }
 
 template<typename T>
-size_t DataCsrMap<T>::NumElementsLine(size_t i) {
+size_t DataCsrMap<T>::NumElementsLine(size_t i) const {
   return rows_.at(i).size();
 }
 
 template<typename T>
-size_t DataCsrMap<T>::NumElementsCol(size_t i) {
+size_t DataCsrMap<T>::NumElementsCol(size_t i) const {
   size_t num_elems = 0;
 
   // Gets the map of each line on the array
@@ -187,13 +187,13 @@ void DataCsrMap<T>::ColMap(size_t i, MapFn fn) {
 }
 
 template<typename T>
-T DataCsrMap<T>::ColReduce(size_t i, const ReduceFn& fn) {
+T DataCsrMap<T>::ColReduce(size_t i, const ReduceFn& fn) const {
   // Gets all lines
-  Range<LineIter> range(rows_.begin(), rows_.end());
+  Range<ConstLineIter> range(rows_.begin(), rows_.end());
 
   // Executes the function fn on all elments
   return parallel_reduce(range, static_cast<T>(0),
-      [&](const Range<LineIter>& r, T value) -> T {
+      [&](const Range<ConstLineIter>& r, T value) -> T {
         T ret = value;
 
         // Scan each line
@@ -228,13 +228,13 @@ void DataCsrMap<T>::Map(const MapFn& fn) {
 }
 
 template<typename T>
-T DataCsrMap<T>::Reduce(const ReduceFn& fn) {
+T DataCsrMap<T>::Reduce(const ReduceFn& fn) const {
   // Gets all elements
-  Range<LineIter> range(rows_.begin(), rows_.end());
+  Range<ConstLineIter> range(rows_.begin(), rows_.end());
 
   // Executes the function fn on all elments
   return parallel_reduce(range, static_cast<T>(0),
-      [&](const Range<LineIter>& r, T value) -> T {
+      [&](const Range<ConstLineIter>& r, T value) -> T {
         T ret = value;
         // Scan each line
         for(auto i = r.begin(); i!=r.end(); ++i)
@@ -268,14 +268,14 @@ void DataCsrMap<T>::RowMap(size_t i, MapFn fn) {
 }
 
 template<typename T>
-T DataCsrMap<T>::RowReduce(size_t i, const ReduceFn& fn) {
+T DataCsrMap<T>::RowReduce(size_t i, const ReduceFn& fn) const {
   auto row_ref = rows_.begin() + i;
   // Gets all elements from line row_ref
-  Range<LineIter> range(row_ref, row_ref + 1);
+  Range<ConstLineIter> range(row_ref, row_ref + 1);
 
   // Executes the function fn on all elments
   parallel_reduce(range, static_cast<T>(0),
-      [&](const Range<LineIter>& r, T value) -> T {
+      [&](const Range<ConstLineIter>& r, T value) -> T {
         T ret = value;
         // Scan each line
         for(auto i = r.begin(); i!=r.end(); ++i)

@@ -51,19 +51,19 @@ class MatBase {
 
   virtual void ColMap(size_t i, MapFn fn) = 0;
 
-  virtual T Reduce(const ReduceFn& fn) = 0;
+  virtual T Reduce(const ReduceFn& fn) const = 0;
 
-  virtual T RowReduce(size_t i, const ReduceFn& fn) = 0;
+  virtual T RowReduce(size_t i, const ReduceFn& fn) const = 0;
 
-  virtual T ColReduce(size_t i, const ReduceFn& fn) = 0;
+  virtual T ColReduce(size_t i, const ReduceFn& fn) const = 0;
 
-  virtual T operator()(const Pos<order>& pos) = 0;
+  virtual T operator()(const Pos<order>& pos) const = 0;
 
-  virtual size_t NumElements() = 0;
+  virtual size_t NumElements() const = 0;
 
-  virtual size_t NumElementsLine(size_t i) = 0;
+  virtual size_t NumElementsLine(size_t i) const = 0;
 
-  virtual size_t NumElementsCol(size_t i) = 0;
+  virtual size_t NumElementsCol(size_t i) const = 0;
 };
 
 template<typename T>

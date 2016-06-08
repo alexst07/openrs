@@ -41,21 +41,21 @@ class DataCsrMap: public DataBase<T> {
 
   void ColMap(size_t i, MapFn fn) override;
 
-  T Reduce(const ReduceFn& fn) override;
+  T Reduce(const ReduceFn& fn) const override;
 
-  T RowReduce(size_t i, const ReduceFn& fn) override;
+  T RowReduce(size_t i, const ReduceFn& fn) const override;
 
-  T ColReduce(size_t i, const ReduceFn& fn) override;
+  T ColReduce(size_t i, const ReduceFn& fn) const override;
 
-  T operator()(const Pos<DataBase<T>::order>& pos) override;
+  T operator()(const Pos<DataBase<T>::order>& pos) const override;
 
-  T operator()(size_type x, size_type y);
+  T operator()(size_type x, size_type y) const;
 
-  size_t NumElements() override;
+  size_t NumElements() const override;
 
-  size_t NumElementsLine(size_t i) override;
+  size_t NumElementsLine(size_t i) const override;
 
-  size_t NumElementsCol(size_t i) override;
+  size_t NumElementsCol(size_t i) const override;
 
   template<typename U>
   friend std::ostream& operator<<(std::ostream& stream, const DataCsrMap<U>& mat);

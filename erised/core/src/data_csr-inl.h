@@ -158,7 +158,7 @@ void DataCsr<T>::ColMap(size_t i, MapFn fn) {
 }
 
 template<typename T>
-T DataCsr<T>::ColReduce(size_t i, const ReduceFn& fn) {
+T DataCsr<T>::ColReduce(size_t i, const ReduceFn& fn) const {
 
 }
 
@@ -175,7 +175,7 @@ void DataCsr<T>::Map(const MapFn& fn) {
 }
 
 template<typename T>
-T DataCsr<T>::Reduce(const ReduceFn& fn) {
+T DataCsr<T>::Reduce(const ReduceFn& fn) const {
 
 }
 
@@ -201,7 +201,7 @@ void DataCsr<T>::RowMap(size_t i, MapFn fn) {
 }
 
 template<typename T>
-T DataCsr<T>::RowReduce(size_t i, const ReduceFn& fn) {
+T DataCsr<T>::RowReduce(size_t i, const ReduceFn& fn) const {
 
 }
 
