@@ -57,10 +57,15 @@ class DataCsrMap: public DataBase<T> {
 
   size_t NumElementsCol(size_t i) const override;
 
+  T Min(size_t i, Axis axis);
+
   template<typename U>
   friend std::ostream& operator<<(std::ostream& stream, const DataCsrMap<U>& mat);
 
  private:
+  T MinElemRow(size_t i);
+  T MinElemCol(size_t i);
+
   VecMap rows_;
 
   size_type size_rows_;

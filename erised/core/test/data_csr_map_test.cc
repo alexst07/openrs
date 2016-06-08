@@ -13,6 +13,9 @@ TEST(Sample, Sampleunit) {
                          {0,    0,   0,   0,   0.4, 0,   0,   0,   0.7},
                          {0.22, 0,   0,   0,   0.4, 0,   0,   0,   0  }};
 
+  std::cout << "\nMin elements col 0: " << data.Min(0, Axis::COL) << "\n";
+  std::cout << "\nMin elements row 2: " << data.Min(2, Axis::ROW) << "\n";
+
   float row_red = data.RowReduce(5, [](float a, float b) {
     return 2*a + b;
   });

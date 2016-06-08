@@ -2,6 +2,9 @@
 #error "This should only be included by data_csr_map.h"
 #endif
 
+#include <atomic>
+#include <limits>
+
 #include "parallel.h"
 
 namespace erised {
@@ -154,16 +157,22 @@ size_t DataCsrMap<T>::NumElementsLine(size_t i) const {
 
 template<typename T>
 size_t DataCsrMap<T>::NumElementsCol(size_t i) const {
-  size_t num_elems = 0;
+  std::atomic<size_t> num_elems(0);
 
-  // Gets the map of each line on the array
-  for (const auto& r: rows_) {
-    // Search the if the elements exists on the map
-    // if it exist increment num_elems
-    auto it = r.find(i);
-    if (it != r.end())
-      num_elems++;
-  }
+  // Gets all lines
+  Range<ConstLineIter> range(rows_.begin(), rows_.end());
+
+  // Iterates over a column, and count the elements
+  parallel_for(range, [&](const Range<ConstLineIter>& r){
+    // Scan each line and search for specific column
+    for(auto row = r.begin(); row != r.end(); ++row) {
+      auto e = row->find(i);
+
+      // Verify if column exists
+      if (e != row->end())
+        num_elems++;
+    }
+  });
 
   return num_elems;
 }
@@ -287,6 +296,61 @@ T DataCsrMap<T>::RowReduce(size_t i, const ReduceFn& fn) const {
   }, [&fn](T a, T b) -> T {
     return fn(a, b);
   });
+}
+
+template<typename T>
+T DataCsrMap<T>::Min(size_t i, Axis axis) {
+  if (axis == Axis::ROW) {
+    return MinElemRow(i);
+  } else {
+    return MinElemCol(i);
+  }
+}
+
+template<typename T>
+T DataCsrMap<T>::MinElemRow(size_t i) {
+  T min = std::numeric_limits<T>::max();
+
+  // Gets the map pointed by the row_ref
+  auto row = rows_.at(i);
+
+  // Iterate over the map
+  for (const auto& e: row) {
+    // Compare to find the lowest
+    // element on the line
+    if (e.second < min) {
+      min = e.second;
+    }
+  }
+
+  return min;
+}
+
+template<typename T>
+T DataCsrMap<T>::MinElemCol(size_t i) {
+  std::atomic<T> min(std::numeric_limits<T>::max());
+
+  // Gets all lines
+  Range<ConstLineIter> range(rows_.begin(), rows_.end());
+
+  // Iterates over a column, and count the elements
+  parallel_for(range, [&](const Range<ConstLineIter>& r){
+    // Scan each line and search for specific column
+    for(const auto &row : r) {
+      auto e = row.find(i);
+
+      // Verify if column exists
+      if (e != row.end()) {
+        // Compare to find the lowest
+        // element on the col
+        if (e->second < min) {
+          min = e->second;
+        }
+      }
+    }
+  });
+
+  return min;
 }
 
 }
