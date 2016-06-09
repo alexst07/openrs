@@ -61,10 +61,28 @@ class DataCsrMap: public DataBase<T> {
 
   T Max(size_t i, Axis axis);
 
+  template<class Func>
+  std::vector<T> Reduce(Func&& fn, Axis axis);
+
+  template<class Func>
+  std::vector<T> Map(Func&& fn, Axis axis);
+
   template<typename U>
   friend std::ostream& operator<<(std::ostream& stream, const DataCsrMap<U>& mat);
 
  private:
+  template<class Func>
+  std::vector<T> ReduceCols(Func&& fn);
+
+  template<class Func>
+  std::vector<T> ReduceRows(Func&& fn);
+
+  template<class Func>
+  std::vector<T> MapCols(Func&& fn);
+
+  template<class Func>
+  std::vector<T> MapRows(Func&& fn);
+
   T MinElemRow(size_t i);
 
   T MinElemCol(size_t i);

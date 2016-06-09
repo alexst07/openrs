@@ -4,6 +4,7 @@
 
 #include <atomic>
 #include <limits>
+#include <mutex>
 
 #include "parallel.h"
 
@@ -406,6 +407,112 @@ T DataCsrMap<T>::MaxElemCol(size_t i) {
   });
 
   return max;
+}
+
+template<typename T>
+template<class Func>
+std::vector<T> DataCsrMap<T>::ReduceCols(Func&& fn) {
+  std::vector<T> rets(size_cols_);
+  std::vector<std::mutex> mtxv(size_cols_);
+
+  // Gets all elements
+  Range<ConstLineIter> range(rows_.begin(), rows_.end());
+
+  // Executes the function fn on all elments
+  parallel_for(range, [&](const Range<ConstLineIter>& r) {
+    // Scan each line
+    for(auto i = r.begin(); i!=r.end(); ++i)
+      // Scan element by element from the line
+      for(const auto& e: *i) {
+        mtxv[e.first].lock();
+        rets[e.first] = fn(e.first, e.second, rets[i]);
+        mtxv[e.first].unlock();
+      }
+  });
+
+  return std::move(rets);
+}
+
+template<typename T>
+template<class Func>
+std::vector<T> DataCsrMap<T>::ReduceRows(Func&& fn) {
+  std::vector<T> rets(size_rows_);
+
+  // Gets all elements
+  Range<ConstLineIter> range(rows_.begin(), rows_.end());
+
+  // Executes the function fn on all elments
+  parallel_for(range, [&](const Range<ConstLineIter>& r) {
+    // Scan each line
+    for(auto i = r.begin(); i!=r.end(); ++i)
+      // Scan element by element from the line
+      for(const auto& e: *i) {
+        auto dist = std::distance(rows_.begin(), r);
+        rets[i] = fn(dist, e.second, rets[i]);
+      }
+  });
+
+  return std::move(rets);
+}
+
+template<typename T>
+template<class Func>
+std::vector<T> DataCsrMap<T>::Reduce(Func&& fn, Axis axis) {
+  if (axis == Axis::ROW) {
+    return std::move(ReduceRows(fn));
+  } else {
+    return std::move(ReduceCols(fn));
+  }
+}
+
+template<typename T>
+template<class Func>
+std::vector<T> DataCsrMap<T>::MapCols(Func&& fn) {
+  // Gets all lines
+  Range<LineIter> range(rows_.begin(), rows_.end());
+
+  // Executes the function fn on all elments from specific column
+  parallel_for(range, [&](const Range<LineIter>& r){
+    // Scan each line and search for specific column
+    for (auto row = r.begin(); row != r.end(); ++row) {
+      for (size_t i = 0; i < size_cols_; i++) {
+        auto got = row->find(i);
+
+        // Verify if column exists
+        if (got != row->end())
+          got->second = fn(i, got->second);
+      }
+    }
+  });
+}
+
+template<typename T>
+template<class Func>
+std::vector<T> DataCsrMap<T>::MapRows(Func&& fn) {
+  // Gets all lines
+  Range<LineIter> range(rows_.begin(), rows_.end());
+
+  // Executes the function fn on all elments
+  return parallel_for(range, [&]( const Range<LineIter>& r) {
+    // Scan only one line, because unordered_map::iterator doesn't
+    // have any to use compare operator as > or < so, TBB parallel
+    // doesn't work correct for unordered_map, and this work arount
+    // is used to guarantee the correct compilation
+    for(auto i = r.begin(); i!=r.end(); ++i)
+      // Scan element by element from the line
+      for(const auto& e: *i)
+        i->operator[](e.first) = fn(std::distance(rows_.begin(), r), e.second);
+  });
+}
+
+template<typename T>
+template<class Func>
+std::vector<T> DataCsrMap<T>::Map(Func&& fn, Axis axis) {
+  if (axis == Axis::ROW) {
+    MapRows(fn);
+  } else {
+    MapCols(fn);
+  }
 }
 
 }
