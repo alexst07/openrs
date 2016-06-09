@@ -57,15 +57,19 @@ class DataCsrMap: public DataBase<T> {
 
   size_t NumElementsCol(size_t i) const override;
 
+  std::vector<size_t> NumElementsLines() const;
+
+  std::vector<size_t> NumElementsCols() const;
+
   T Min(size_t i, Axis axis);
 
   T Max(size_t i, Axis axis);
 
   template<class Func>
-  std::vector<T> Reduce(Func&& fn, Axis axis);
+  std::vector<T> Reduce(Axis axis, Func&& fn);
 
   template<class Func>
-  std::vector<T> Map(Func&& fn, Axis axis);
+  std::vector<T> Map(Axis axis, Func&& fn);
 
   template<typename U>
   friend std::ostream& operator<<(std::ostream& stream, const DataCsrMap<U>& mat);

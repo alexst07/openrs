@@ -157,6 +157,26 @@ size_t DataCsrMap<T>::NumElementsLine(size_t i) const {
 }
 
 template<typename T>
+std::vector<size_t>  DataCsrMap<T>::NumElementsLines() const {
+  std::vector<size_t> rets(size_rows_);
+  // Gets all lines
+  Range<LineIter> range(rows_.begin(), rows_.end());
+
+  // Executes the function fn on all elments
+  return parallel_for(range, [&]( const Range<LineIter>& r) {
+    // Scan only one line, because unordered_map::iterator doesn't
+    // have any to use compare operator as > or < so, TBB parallel
+    // doesn't work correct for unordered_map, and this work arount
+    // is used to guarantee the correct compilation
+    for(auto i = r.begin(); i!=r.end(); ++i) {
+      auto dist = std::distance(rows_.begin(), i);
+      rets[dist] = i->size();
+    }
+  });
+  return rets;
+}
+
+template<typename T>
 size_t DataCsrMap<T>::NumElementsCol(size_t i) const {
   std::atomic<size_t> num_elems(0);
 
@@ -172,6 +192,34 @@ size_t DataCsrMap<T>::NumElementsCol(size_t i) const {
       // Verify if column exists
       if (e != row->end())
         num_elems++;
+    }
+  });
+
+  return num_elems;
+}
+
+template<typename T>
+std::vector<size_t>  DataCsrMap<T>::NumElementsCols() const {
+  std::vector<size_t> num_elems(size_cols_);
+  std::vector<std::mutex> mtxv(size_cols_);
+
+  // Gets all lines
+  Range<ConstLineIter> range(rows_.begin(), rows_.end());
+
+  // Iterates over a column, and count the elements
+  parallel_for(range, [&](const Range<ConstLineIter>& r){
+    // Scan each line and search for specific column
+    for(auto row = r.begin(); row != r.end(); ++row) {
+      for (size_t i = 0; i < size_cols_; i++) {
+        auto e = row->find(i);
+
+        // Verify if column exists
+        if (e != row->end()) {
+          mtxv[i].lock();
+          num_elems[i]++;
+          mtxv[i].unlock();
+        }
+      }
     }
   });
 
@@ -457,7 +505,7 @@ std::vector<T> DataCsrMap<T>::ReduceRows(Func&& fn) {
 
 template<typename T>
 template<class Func>
-std::vector<T> DataCsrMap<T>::Reduce(Func&& fn, Axis axis) {
+std::vector<T> DataCsrMap<T>::Reduce(Axis axis, Func&& fn) {
   if (axis == Axis::ROW) {
     return std::move(ReduceRows(fn));
   } else {
@@ -507,7 +555,7 @@ std::vector<T> DataCsrMap<T>::MapRows(Func&& fn) {
 
 template<typename T>
 template<class Func>
-std::vector<T> DataCsrMap<T>::Map(Func&& fn, Axis axis) {
+std::vector<T> DataCsrMap<T>::Map(Axis axis, Func&& fn) {
   if (axis == Axis::ROW) {
     MapRows(fn);
   } else {
