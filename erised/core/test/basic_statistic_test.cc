@@ -15,12 +15,10 @@ TEST(Sample, Sampleunit) {
                          {0,    0,   0,   0,   0.4, 0,   0,   0,   0.7},
                          {0.22, 0,   0,   0,   0.4, 0,   0,   0,   0  }};
 
-  float res = Avarage(data);
   float res_l = Avarage(data, 2, Axis::ROW);
   float res_c = Avarage(data, 0, Axis::COL);
 
-  std::cout << "Avarage: " << res << "\n"
-            << "Avarage row 2: " << res_l << "\n"
+  std::cout << "Avarage row 2: " << res_l << "\n"
             << "Avarage col 0: " << res_c << "\n";
 
   float var_r = Variance(data, 2, Axis::ROW);
