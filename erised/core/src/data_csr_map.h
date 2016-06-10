@@ -65,6 +65,10 @@ class DataCsrMap: public DataBase<T> {
 
   T Max(size_t i, Axis axis);
 
+  T Min(Axis axis);
+
+  T Max(Axis axis);
+
   template<class Func>
   std::vector<T> Reduce(Axis axis, Func&& fn);
 
@@ -94,6 +98,14 @@ class DataCsrMap: public DataBase<T> {
   T MaxElemRow(size_t i);
 
   T MaxElemCol(size_t i);
+
+  std::vector<T> MinElemsRows();
+
+  std::vector<T> MinElemsCols();
+
+  std::vector<T> MaxElemsRows();
+
+  std::vector<T> MaxElemsCols();
 
   VecMap rows_;
 

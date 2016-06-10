@@ -458,6 +458,106 @@ T DataCsrMap<T>::MaxElemCol(size_t i) {
 }
 
 template<typename T>
+std::vector<T> DataCsrMap<T>::MinElemsRows() {
+  std::vector<T> min_elems(size_rows_);
+
+  // Gets all elements
+  Range<ConstLineIter> range(rows_.begin(), rows_.end());
+
+  // Executes the function fn on all elments
+  parallel_for(range, [&](const Range<ConstLineIter>& r) {
+    // Scan each line
+    for(auto i = r.begin(); i!=r.end(); ++i) {
+        auto dist = std::distance(rows_.begin(), i);
+        min_elems[dist] = MinElemRow(dist);
+    }
+  });
+
+  return std::move(min_elems);
+}
+
+template<typename T>
+std::vector<T> DataCsrMap<T>::MinElemsCols() {
+  std::vector<T> min_elems(size_cols_, std::numeric_limits<T>::max());
+  std::vector<std::mutex> mtxv(size_cols_);
+
+  // Gets all lines
+  Range<ConstLineIter> range(rows_.begin(), rows_.end());
+
+  // Iterates over a column, and count the elements
+  parallel_for(range, [&](const Range<ConstLineIter>& r){
+    // Scan each line and search for specific column
+    for (const auto &row : r) {
+      for (size_t i = 0; i < size_cols_; i++) {
+        auto e = row.find(i);
+
+        // Verify if column exists
+        if (e != row.end()) {
+          auto dist = std::distance(rows_.begin(), row);
+          mtxv[e->first].lock();
+          if (e->second < min_elems[e->first]) {
+            min_elems[e->first] = e->second;
+          }
+          mtxv[e->first].unlock();
+        }
+      }
+    }
+  });
+
+  return std::move(min_elems);
+}
+
+template<typename T>
+std::vector<T> DataCsrMap<T>::MaxElemsRows() {
+  std::vector<T> min_elems(size_rows_);
+
+  // Gets all elements
+  Range<ConstLineIter> range(rows_.begin(), rows_.end());
+
+  // Executes the function fn on all elments
+  parallel_for(range, [&](const Range<ConstLineIter>& r) {
+    // Scan each line
+    for(auto i = r.begin(); i!=r.end(); ++i) {
+        auto dist = std::distance(rows_.begin(), i);
+        min_elems[dist] = MaxElemRow(dist);
+    }
+  });
+
+  return std::move(min_elems);
+}
+
+template<typename T>
+std::vector<T> DataCsrMap<T>::MaxElemsCols() {
+  std::vector<T> max_elems(size_cols_, std::numeric_limits<T>::min());
+  std::vector<std::mutex> mtxv(size_cols_);
+
+  // Gets all lines
+  Range<ConstLineIter> range(rows_.begin(), rows_.end());
+
+  // Iterates over a column, and count the elements
+  parallel_for(range, [&](const Range<ConstLineIter>& r){
+    // Scan each line and search for specific column
+    for (const auto &row : r) {
+      for (size_t i = 0; i < size_cols_; i++) {
+        auto e = row.find(i);
+
+        // Verify if column exists
+        if (e != row.end()) {
+          auto dist = std::distance(rows_.begin(), row);
+          mtxv[e->first].lock();
+          if (e->second > max_elems[e->first]) {
+            max_elems[e->first] = e->second;
+          }
+          mtxv[e->first].unlock();
+        }
+      }
+    }
+  });
+
+  return std::move(max_elems);
+}
+
+template<typename T>
 template<class Func>
 std::vector<T> DataCsrMap<T>::ReduceCols(Func&& fn) {
   std::vector<T> rets(size_cols_);
