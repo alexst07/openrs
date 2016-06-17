@@ -5,49 +5,100 @@
 #include <initializer_list>
 #include <functional>
 
+#include "data_base.h"
 #include "triangular_mat_base.h"
 
 namespace erised {
 
+class TriangularMat;
+class TriangularMatSliceIterator;
+
 template<typename T>
 class TriangularMatSlice {
+  friend class TriangularMat;
  public:
-  template<typename Func>
-  TriangularMatSlice(Func&& f);
+  using iterator = typename TriangularMatSliceIterator<T>;
+  typedef TriangularMatSliceIterator iterator;
+
   TriangularMatSlice(const TriangularMatSlice<T>& m);
-  TriangularMatSlice(TriangularMatSlice<T>&& m);
+
+  TriangularMatSlice(TriangularMatSlice<T>&& m) = delete;
 
   T& operator[](size_t i);
   const T& operator[](size_t i) const;
 
+  TriangularMatSliceIterator Begin();
+
+  TriangularMatSliceIterator End();
+
  private:
-  std::function fn_;
+  TriangularMatSlice(TriangularMat& ref, Axis axis, size_t axis_i);
+
+  TriangularMat& ref_;
+  Axis axis_;
+  size_t axis_i_;
 };
 
 template<typename T>
 class TriangularMatSliceIterator : public std::iterator<std::input_iterator_tag, T> {
   friend class TriangularMatSlice;
  public:
-  MyIterator(int* x) :p(x) {}
-  MyIterator(const MyIterator& mit) : p(mit.p) {}
-  MyIterator& operator++() {++p;return *this;}
-  MyIterator operator++(int) {MyIterator tmp(*this); operator++(); return tmp;}
-  bool operator==(const MyIterator& rhs) {return p==rhs.p;}
-  bool operator!=(const MyIterator& rhs) {return p!=rhs.p;}
-  T& operator*() {return *p;}
+
+  TriangularMatSliceIterator(const TriangularMatSliceIterator& it)
+    : ref_(it.ref_)
+    , pos_(it.pos_) {}
+
+  TriangularMatSliceIterator& operator++() {
+    ++pos_;
+    return *this;
+  }
+
+  TriangularMatSliceIterator operator++(int) {
+    TriangularMatSliceIterator tmp(*this);
+    operator++();
+    return tmp;
+  }
+
+  bool operator==(const TriangularMatSliceIterator& it) {
+    return pos_==it.pos_;
+  }
+
+  bool operator!=(const TriangularMatSliceIterator& it) {
+    return pos_!=it.pos_;
+  }
+
+  T& operator*() {
+    return ref_[pos_];
+  }
+
+  const T& operator*() const {
+    return ref_[pos_];
+  }
+
  private:
-  TriangularMatSliceIterator()
-  TriangularMatSlice* p_;
+  TriangularMatSliceIterator(TriangularMatSlice& ref)
+    : ref_(ref)
+    , pos_(0) {}
+
+  TriangularMatSlice& ref_;
+  size_t pos_;
 };
 
+constexpr size_t TriangularMatElems(size_t size) {
+  size_t total = size*size;
+  return total/2 - size/2;
+}
 
 /**
  *
  *
  */
 template<typename T>
-class TriangularMatBase {
+class TriangularMat {
  public:
+  TriangularMat(size_t size);
+  TriangularMat(size_t size, std::vector<T> elems);
+
   TriangularMatSlice Row(size_t i);
   TriangularMatSlice Col(size_t i);
   T& operator()(size_t x, size_t y);
