@@ -179,18 +179,54 @@ constexpr size_t TriangularMatElems(size_t size) {
 template<typename T>
 class TriangularMat {
  public:
-  TriangularMat(size_t size)
-    try: elems_(TriangularMatElems(size)), size_(size) {
+  explicit TriangularMat(size_t size)
+    try: elems_{TriangularMatElems(size)}, size_(size) {
   } catch (std::bad_alloc& e) {
     throw std::bad_alloc("Error on allocate elements");
   }
 
-  TriangularMat(size_t size, std::vector<T> elems)
-    try: elems_(TriangularMatElems(size) == elems.size() ? std::move(elems) :
-        throw std::invalid_argument("Vector has wrong size"))
+  TriangularMat(size_t size, const std::vector<T>& elems)
+    try: elems_{TriangularMatElems(size) == elems.size() ? elems :
+        throw std::invalid_argument("Vector has wrong size")}
     , size_(size) {
   } catch (std::bad_alloc& e) {
     throw std::bad_alloc("Error on allocate elements");
+  }
+
+  TriangularMat(size_t size, std::vector<T>&& elems)
+    try: elems_{TriangularMatElems(size) == elems.size() ? std::move(elems) :
+        throw std::invalid_argument("Vector has wrong size")}
+    , size_(size) {
+  } catch (std::bad_alloc& e) {
+    throw std::bad_alloc("Error on allocate elements");
+  }
+
+  TriangularMat(const TriangularMat<T>& tm): elems_(tm.elems_), size_(tm.size_) {}
+
+  TriangularMat(TriangularMat<T>&& tm)
+    : elems_(std::move(tm.elems_)), size_(tm.size_) {
+    size_ = 0;
+  }
+
+  TriangularMat<T>& operator=(const TriangularMat<T>& tm) {
+    // self-assignment check
+    if (this != &tm) {
+      elems_ = tm.elems_;
+      size_ = tm.size_;
+    }
+
+    return *this;
+  }
+
+  TriangularMat<T>& operator=(TriangularMat<T>&& tm) {
+    // self-assignment check
+    if (this != &tm) {
+      elems_ = std::move(tm.elems_);
+      size_ = tm.size_;
+      size_ = 0;
+    }
+
+    return *this;
   }
 
   TriangularMatSlice<T> Row(size_t i) {
