@@ -1,5 +1,8 @@
-
-# gtest.
+# This file is part of gtestcmake project
+# https://github.com/jpilet/gtestcmake/blob/master/cmake/GTest.cmake
+# Copyright (c) 2014 Julien Pilet
+#
+# gtest
 
 include(ExternalProject)
 
