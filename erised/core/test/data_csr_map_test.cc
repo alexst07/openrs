@@ -52,3 +52,8 @@ TEST(Sample, Sampleunit) {
   std::cout << "\nNum elements line 3: " << data.NumElementsLine(3) << "\n";
   std::cout << "\nNum elements col 4: " << data.NumElementsCol(4) << "\n";
 }
+
+int main(int argc, char **argv) {
+  ::testing::InitGoogleTest(&argc, argv);
+  return RUN_ALL_TESTS();
+}

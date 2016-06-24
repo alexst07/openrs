@@ -26,3 +26,8 @@ TEST(Sample, Sampleunit) {
   std::cout << "Variance row 2: " << var_r << "\n"
             << "Variance col 0: " << var_c << "\n";
 }
+
+int main(int argc, char **argv) {
+  ::testing::InitGoogleTest(&argc, argv);
+  return RUN_ALL_TESTS();
+}

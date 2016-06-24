@@ -33,7 +33,7 @@ endif ()
 
 if (BUILD_TESTS)
   enable_testing()
-  find_package(GTest REQUIRED)
+  include(cmake/GTest.cmake)
   include_directories(SYSTEM ${GTEST_INCLUDE_DIRS})
 endif ()
 

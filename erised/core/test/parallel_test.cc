@@ -73,3 +73,8 @@ TEST(Parallel, parallel_reduce_int) {
 
   std::cout << "total--: " << r << "\n";
 }
+
+int main(int argc, char **argv) {
+  ::testing::InitGoogleTest(&argc, argv);
+  return RUN_ALL_TESTS();
+}

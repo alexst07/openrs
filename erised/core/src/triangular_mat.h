@@ -5,6 +5,7 @@
 #include <initializer_list>
 #include <functional>
 #include <exception>
+#include <string>
 
 #include "data_base.h"
 
@@ -179,10 +180,12 @@ constexpr size_t TriangularMatElems(size_t size) {
 template<typename T>
 class TriangularMat {
  public:
+  TriangularMat(): elems_(0), size_(0) {}
+
   explicit TriangularMat(size_t size)
     try: elems_{TriangularMatElems(size)}, size_(size) {
   } catch (std::bad_alloc& e) {
-    throw std::bad_alloc("Error on allocate elements");
+    throw std::bad_alloc();
   }
 
   TriangularMat(size_t size, const std::vector<T>& elems)
@@ -190,7 +193,7 @@ class TriangularMat {
         throw std::invalid_argument("Vector has wrong size")}
     , size_(size) {
   } catch (std::bad_alloc& e) {
-    throw std::bad_alloc("Error on allocate elements");
+    throw std::bad_alloc();
   }
 
   TriangularMat(size_t size, std::vector<T>&& elems)
@@ -198,7 +201,7 @@ class TriangularMat {
         throw std::invalid_argument("Vector has wrong size")}
     , size_(size) {
   } catch (std::bad_alloc& e) {
-    throw std::bad_alloc("Error on allocate elements");
+    throw std::bad_alloc();
   }
 
   TriangularMat(const TriangularMat<T>& tm): elems_(tm.elems_), size_(tm.size_) {}
