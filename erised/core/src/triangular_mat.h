@@ -24,8 +24,6 @@ class TriangularMatSlice {
   TriangularMatSlice(const TriangularMatSlice<T>& m)
     : ref_(m.ref_), axis_(m.axis_), axis_i_(m.axis_i_) {}
 
-  TriangularMatSlice(TriangularMatSlice<T>&& m) = delete;
-
   T& operator[](size_t i) {
     if (axis_ == Axis::ROW)
       return ref_(axis_i_, i);
@@ -41,24 +39,29 @@ class TriangularMatSlice {
   }
 
   iterator begin() {
-    return iterator(ref_, 0);
+    return iterator(*this, static_cast<size_t>(0));
   }
 
   const_iterator begin() const {
-    return const_iterator(ref_, 0);
+    return const_iterator(*this, 0);
   }
 
   iterator end() {
     size_t size_elems = SizeAxis(ref_.Size(), axis_, axis_i_);
-    return iterator(ref_, size_elems);
+    return iterator(*this, size_elems);
   }
 
   const_iterator end() const {
     size_t size_elems = SizeAxis(ref_.Size(), axis_, axis_i_);
-    return const_iterator(ref_, size_elems);
+    return const_iterator(*this, size_elems);
+  }
+
+  size_t Size() const noexcept {
+    return SizeAxis(ref_.Size(), axis_, axis_i_);
   }
 
   class iterator: public std::iterator<std::input_iterator_tag, T> {
+    friend class TriangularMatSlice;
    public:
     typedef iterator self_type;
     typedef T value_type;
@@ -105,6 +108,7 @@ class TriangularMatSlice {
   };
 
   class const_iterator: public std::iterator<std::input_iterator_tag, T> {
+    friend class TriangularMatSlice;
    public:
     typedef const_iterator self_type;
     typedef T value_type;
@@ -157,7 +161,7 @@ class TriangularMatSlice {
 
   static size_t SizeAxis(size_t size, Axis axis, size_t axis_i) {
     if (axis == Axis::ROW) {
-      size_t num = size - axis_i - 1;
+      int num = size - axis_i - 1;
       return num >= 0? num: 0;
     } else {
       return axis_i;
@@ -180,10 +184,12 @@ constexpr size_t TriangularMatElems(size_t size) {
 template<typename T>
 class TriangularMat {
  public:
-  TriangularMat(): elems_(0), size_(0) {}
+  TriangularMat(): elems_(0), size_(0), unit_(static_cast<T>(1)) {}
 
   explicit TriangularMat(size_t size)
-    try: elems_{TriangularMatElems(size)}, size_(size) {
+    try: elems_{TriangularMatElems(size)}
+       , size_(size)
+       , unit_(static_cast<T>(1)) {
   } catch (std::bad_alloc& e) {
     throw std::bad_alloc();
   }
@@ -191,7 +197,8 @@ class TriangularMat {
   TriangularMat(size_t size, const std::vector<T>& elems)
     try: elems_{TriangularMatElems(size) == elems.size() ? elems :
         throw std::invalid_argument("Vector has wrong size")}
-    , size_(size) {
+    , size_(size)
+    , unit_(static_cast<T>(1)) {
   } catch (std::bad_alloc& e) {
     throw std::bad_alloc();
   }
@@ -199,16 +206,24 @@ class TriangularMat {
   TriangularMat(size_t size, std::vector<T>&& elems)
     try: elems_{TriangularMatElems(size) == elems.size() ? std::move(elems) :
         throw std::invalid_argument("Vector has wrong size")}
-    , size_(size) {
+    , size_(size)
+    , unit_(static_cast<T>(1)) {
   } catch (std::bad_alloc& e) {
     throw std::bad_alloc();
   }
 
-  TriangularMat(const TriangularMat<T>& tm): elems_(tm.elems_), size_(tm.size_) {}
+  TriangularMat(const TriangularMat<T>& tm)
+    : elems_(tm.elems_)
+    , size_(tm.size_)
+    , unit_(tm.unit_)
+    {}
 
   TriangularMat(TriangularMat<T>&& tm)
-    : elems_(std::move(tm.elems_)), size_(tm.size_) {
-    size_ = 0;
+    : elems_(std::move(tm.elems_))
+    , size_(tm.size_)
+    , unit_(tm.unit_)
+  {
+    tm.size_ = 0;
   }
 
   TriangularMat<T>& operator=(const TriangularMat<T>& tm) {
@@ -216,6 +231,7 @@ class TriangularMat {
     if (this != &tm) {
       elems_ = tm.elems_;
       size_ = tm.size_;
+      unit_ = tm.unit_;
     }
 
     return *this;
@@ -226,7 +242,8 @@ class TriangularMat {
     if (this != &tm) {
       elems_ = std::move(tm.elems_);
       size_ = tm.size_;
-      size_ = 0;
+      unit_ = tm.unit_;
+      tm.size_ = 0;
     }
 
     return *this;
@@ -237,21 +254,31 @@ class TriangularMat {
     return slice;
   }
 
-  TriangularMatSlice<T>  Col(size_t i) {
+  TriangularMatSlice<T> Col(size_t i) {
     TriangularMatSlice<T> slice(*this, Axis::COL, i);
     return slice;
   }
 
-  T& operator()(size_t x, size_t y) noexcept {
+  T& Index(size_t x, size_t y) noexcept {
+    if (x == y)
+      return unit_;
+    else if (x > y) {
+      size_t tmp = x;
+      x = y;
+      y = tmp;
+    }
+
     size_t n = SizeValidElements();
     size_t i = (n*(n-1)/2) - (n-x)*((n-x)-1)/2 + y - x - 1;
     return elems_[i];
   }
 
+  T& operator()(size_t x, size_t y) noexcept {
+    return Index(x, y);
+  }
+
   const T& operator()(size_t x, size_t y) const noexcept {
-    size_t n = SizeValidElements();
-    size_t i = (n*(n-1)/2) - (n-x)*((n-x)-1)/2 + y - x - 1;
-    return elems_[i];
+    return Index(x, y);
   }
 
   size_t Size() const noexcept{
@@ -277,6 +304,7 @@ class TriangularMat {
 
   std::vector<T> elems_;
   size_t size_;
+  T unit_;
 };
 
 }

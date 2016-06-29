@@ -11,8 +11,7 @@ class TriangularMatTest : public ::testing::Test {
   erised::TriangularMat<T> mat_;
 
   void SetUp() {
-    elems = {1, 2, 3, 4, 5, 6};
-    mat_ = erised::TriangularMat<T>(4, std::move(elems));
+    mat_ = erised::TriangularMat<T>(4, {1, 2, 3, 4, 5, 6});
   }
 
   void TearDown() {
@@ -24,9 +23,13 @@ class TriangularMatTest : public ::testing::Test {
 TYPED_TEST_CASE_P(TriangularMatTest);
 
 TYPED_TEST_P(TriangularMatTest, Access) {
+  auto row = TestFixture::mat_.Row(1);
 
+  std::cout << "row size: " << row.Size() << "\n";
+  for (const auto& v : row)
+    std::cout << v << ", ";
 
-
+  std::cout << "\n\n";
 }
 
 REGISTER_TYPED_TEST_CASE_P(TriangularMatTest,
