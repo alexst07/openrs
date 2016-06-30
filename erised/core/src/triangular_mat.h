@@ -15,13 +15,13 @@ template<typename T>
 class TriangularMat;
 
 template<typename T>
-class TriangularMatSlice {
+class TriangularMatAxisRef {
   friend class TriangularMat<T>;
  public:
   class iterator;
   class const_iterator;
 
-  TriangularMatSlice(const TriangularMatSlice<T>& m)
+  TriangularMatAxisRef(const TriangularMatAxisRef<T>& m)
     : ref_(m.ref_), axis_(m.axis_), axis_i_(m.axis_i_) {}
 
   T& operator[](size_t i) {
@@ -47,21 +47,19 @@ class TriangularMatSlice {
   }
 
   iterator end() {
-    size_t size_elems = SizeAxis(ref_.Size(), axis_, axis_i_);
-    return iterator(*this, size_elems);
+    return iterator(*this, ref_.Size());
   }
 
   const_iterator end() const {
-    size_t size_elems = SizeAxis(ref_.Size(), axis_, axis_i_);
-    return const_iterator(*this, size_elems);
+    return const_iterator(*this, ref_.Size());
   }
 
   size_t Size() const noexcept {
-    return SizeAxis(ref_.Size(), axis_, axis_i_);
+    return ref_.Size();
   }
 
   class iterator: public std::iterator<std::input_iterator_tag, T> {
-    friend class TriangularMatSlice;
+    friend class TriangularMatAxisRef;
    public:
     typedef iterator self_type;
     typedef T value_type;
@@ -100,15 +98,15 @@ class TriangularMatSlice {
     }
 
   private:
-    iterator(TriangularMatSlice& ref): ref_(ref), pos_(0) {}
-    iterator(TriangularMatSlice& ref, size_t pos): ref_(ref), pos_(pos) {}
+    iterator(TriangularMatAxisRef& ref): ref_(ref), pos_(0) {}
+    iterator(TriangularMatAxisRef& ref, size_t pos): ref_(ref), pos_(pos) {}
 
-    TriangularMatSlice& ref_;
+    TriangularMatAxisRef& ref_;
     size_t pos_;
   };
 
   class const_iterator: public std::iterator<std::input_iterator_tag, T> {
-    friend class TriangularMatSlice;
+    friend class TriangularMatAxisRef;
    public:
     typedef const_iterator self_type;
     typedef T value_type;
@@ -146,27 +144,18 @@ class TriangularMatSlice {
       return ref_[pos_];
     }
 
-  private:
-    const_iterator(TriangularMatSlice& ref): ref_(ref), pos_(0) {}
-    const_iterator(TriangularMatSlice& ref, size_t pos)
+   private:
+    const_iterator(TriangularMatAxisRef& ref): ref_(ref), pos_(0) {}
+    const_iterator(TriangularMatAxisRef& ref, size_t pos)
       : ref_(ref), pos_(pos) {}
 
-    TriangularMatSlice& ref_;
+    TriangularMatAxisRef& ref_;
     size_t pos_;
   };
 
  private:
-  TriangularMatSlice(TriangularMat<T>& ref, Axis axis, size_t axis_i)
+  TriangularMatAxisRef(TriangularMat<T>& ref, Axis axis, size_t axis_i)
     : ref_(ref), axis_(axis), axis_i_(axis_i) {}
-
-  static size_t SizeAxis(size_t size, Axis axis, size_t axis_i) {
-    if (axis == Axis::ROW) {
-      int num = size - axis_i - 1;
-      return num >= 0? num: 0;
-    } else {
-      return axis_i;
-    }
-  }
 
   TriangularMat<T>& ref_;
   Axis axis_;
@@ -249,17 +238,24 @@ class TriangularMat {
     return *this;
   }
 
-  TriangularMatSlice<T> Row(size_t i) {
-    TriangularMatSlice<T> slice(*this, Axis::ROW, i);
+  TriangularMatAxisRef<T> Row(size_t i) {
+    TriangularMatAxisRef<T> slice(*this, Axis::ROW, i);
     return slice;
   }
 
-  TriangularMatSlice<T> Col(size_t i) {
-    TriangularMatSlice<T> slice(*this, Axis::COL, i);
+  TriangularMatAxisRef<T> Col(size_t i) {
+    TriangularMatAxisRef<T> slice(*this, Axis::COL, i);
     return slice;
   }
 
   T& Index(size_t x, size_t y) noexcept {
+    // If the client gives x > 0, the element is always 0
+    // so, this operation is like a mirror operation on matrix
+    // [[1 1 2 3]
+    //  [1 1 4 5]
+    //  [2 4 1 6]
+    //  [3 5 6 1]]
+    // And if x == y, so the element is from diagonal, what is 1
     if (x == y)
       return unit_;
     else if (x > y) {
@@ -268,7 +264,9 @@ class TriangularMat {
       y = tmp;
     }
 
-    size_t n = SizeValidElements();
+    size_t n = size_;
+
+    // This equations gives the index on the array for the coordinate
     size_t i = (n*(n-1)/2) - (n-x)*((n-x)-1)/2 + y - x - 1;
     return elems_[i];
   }

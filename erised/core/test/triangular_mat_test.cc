@@ -23,10 +23,18 @@ class TriangularMatTest : public ::testing::Test {
 TYPED_TEST_CASE_P(TriangularMatTest);
 
 TYPED_TEST_P(TriangularMatTest, Access) {
-  auto row = TestFixture::mat_.Row(1);
+  auto row = TestFixture::mat_.Row(3);
 
   std::cout << "row size: " << row.Size() << "\n";
   for (const auto& v : row)
+    std::cout << v << ", ";
+
+  std::cout << "\n\n";
+
+  auto col = TestFixture::mat_.Col(2);
+
+  std::cout << "col size: " << col.Size() << "\n";
+  for (const auto& v : col)
     std::cout << v << ", ";
 
   std::cout << "\n\n";
