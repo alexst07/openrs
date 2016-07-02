@@ -8,6 +8,7 @@
 #include <string>
 
 #include "data_base.h"
+#include "exception.h"
 
 namespace erised {
 
@@ -248,7 +249,7 @@ class TriangularMat {
     return slice;
   }
 
-  T& Index(size_t x, size_t y) noexcept {
+  T& Element(size_t x, size_t y) noexcept {
     // If the client gives x > 0, the element is always 0
     // so, this operation is like a mirror operation on matrix
     // [[1 1 2 3]
@@ -272,11 +273,11 @@ class TriangularMat {
   }
 
   T& operator()(size_t x, size_t y) noexcept {
-    return Index(x, y);
+    return Element(x, y);
   }
 
   const T& operator()(size_t x, size_t y) const noexcept {
-    return Index(x, y);
+    return Element(x, y);
   }
 
   size_t Size() const noexcept{

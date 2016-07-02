@@ -8,7 +8,8 @@ namespace erised {
 
 enum class Error {
   INVALID_ARGUMENT,
-  OUT_OF_RANGE
+  OUT_OF_RANGE,
+  BAD_ALLOC
 };
 
 template <typename Enumeration>
@@ -42,9 +43,9 @@ class Exception : public std::exception {
     , func_(func)
     , src_file_(src_file)
     , line_(line)
-    {
-      FormatMessage();
-    }
+  {
+    FormatMessage();
+  }
 
   virtual ~Exception() noexcept  = default;
 
