@@ -22,6 +22,7 @@ if (BUILD_TESTS)
     message("Compiling: ${local_file} ${SOURCES} ${TBB_LIBRARIES} ${GTEST_MAIN_LIBRARIES} ${GTEST_LIBRARIES}")
     add_executable(${local_filename} ${local_file} ${SOURCES})
     cxx_test(${local_filename} ${local_file} ${GTEST_MAIN_LIBRARIES} ${GTEST_LIBRARIES})
+    dep_flann(${local_filename})
     target_link_libraries(${local_filename} ${TBB_LIBRARIES} ${GTEST_MAIN_LIBRARIES} ${GTEST_LIBRARIES})
   endforeach()
 

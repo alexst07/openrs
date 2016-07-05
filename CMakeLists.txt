@@ -15,9 +15,11 @@ else()
   message(STATUS "The compiler ${CMAKE_CXX_COMPILER} has no C++11 support. Please use a different C++ compiler.")
 endif()
 
-ERSD_OPTION(WITH_TBB            "Include Intel TBB support"                   ON)
-ERSD_OPTION(WITH_CUDA           "Include NVidia Cuda Runtime support"         OFF)
-ERSD_OPTION(BUILD_TESTS         "Build all tests"                             ON)
+#
+# FLANN support to calculates fast knn
+#
+include(cmake/FLANN.cmake)
+include_directories(${FLANN_INCLUDE_DIRS})
 
 if (WITH_TBB)
   find_package(TBB REQUIRED)
@@ -44,6 +46,7 @@ include_directories(${PROJECT_BINARY_DIR}/include/)
 
 add_subdirectory(erised)
 
-message(STATUS "HAVE_TBB:  ${WITH_TBB}")
-message(STATUS "HAVE_CUDA: ${HAVE_CUDA}")
+ERSD_OPTION(WITH_TBB            "Include Intel TBB support"                   ON)
+ERSD_OPTION(WITH_CUDA           "Include NVidia Cuda Runtime support"         OFF)
+ERSD_OPTION(BUILD_TESTS         "Build all tests"                             ON)
 
