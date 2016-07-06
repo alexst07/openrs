@@ -1,0 +1,13 @@
+#include <gtest/gtest.h>
+#include <iostream>
+
+#include "flann.h"
+
+TEST(Sample, Sampleunit) {
+
+}
+
+int main(int argc, char **argv) {
+  ::testing::InitGoogleTest(&argc, argv);
+  return RUN_ALL_TESTS();
+}
