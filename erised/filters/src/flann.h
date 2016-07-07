@@ -8,6 +8,8 @@
 #include <memory>
 #include <flann/flann.hpp>
 
+#include "exception.h"
+
 namespace erised { namespace flann {
 
 
@@ -27,7 +29,6 @@ class SimMatRef {
   T& operator[](size_t);
   const T& operator[](size_t) const;
 
-
  private:
   SimMatRef(T* ptr, size_t step);
   T* ptr_;
@@ -38,21 +39,56 @@ template<class T>
 class SimMat {
  public:
   static constexpr bool continuous = true;
+
   using iterator = typename std::vector<T>::iterator;
   using const_iterator = typename std::vector<T>::const_iterator;
 
-  SimMat() = default;
-  SimMat(const std::vector<T>& v, size_t rows, size_t cols);
-  SimMat(std::vector<T>&& v, size_t rows, size_t cols);
+  inline SimMat(): rows_(0), cols_(0) {}
 
-  T& operator()(size_t x, size_t y);
-  const T& operator()(size_t x, size_t y) const;
+  inline SimMat(size_t rows, size_t cols)
+    : rows_(rows), cols_(cols), mat_(rows*cols) {}
 
-  T* Data() {
+  inline SimMat(const std::vector<T>& v, size_t rows, size_t cols)
+    : rows_(0), cols_(0), mat_(v) {}
+
+  inline SimMat(std::vector<T>&& v, size_t rows, size_t cols)
+    : rows_(0), cols_(0), mat_(std::move(v)) {}
+
+  inline T& operator()(size_t x, size_t y) {
+    return mat_[cols_*x + y];
+  }
+
+  inline const T& operator()(size_t x, size_t y) const {
+    return mat_[cols_*x + y];
+  }
+
+  inline const T* Data() const noexcept {
     return mat_.data();
   }
 
+  inline T* Data() noexcept {
+    return mat_.data();
+  }
+
+  inline size_t Size() const noexcept {
+    return  mat_.size();
+  }
+
+  inline size_t Capacity() const noexcept {
+    return  mat_.capacity();
+  }
+
+  inline size_t Rows() const noexcept {
+    return rows_;
+  }
+
+  inline size_t Cols() const noexcept {
+    return cols_;
+  }
+
  private:
+  size_t rows_;
+  size_t cols_;
   std::vector<T> mat_;
 };
 
@@ -123,12 +159,15 @@ typedef ::flann::KMeansIndexParams KMeansIndexParams;
 
 typedef struct ::flann::SearchParams SearchParams;
 
-template<class Distance>
+template<typename Distance>
 class Index {
  public:
-  template<class T>
-  inline Index(const SimMat<T>& data, const IndexParams& params)
-    : index_(::flann::Matrix<T>(data.Data()), params){}
+  using Value = typename ::flann::Index<Distance>::ElementType;
+
+  inline Index(const SimMat<Value>& data, const IndexParams& params)
+    : index_(::flann::Matrix<Value>(const_cast<Value*>(data.Data()),
+                                    data.Rows(),
+                                    data.Cols()), params){}
 
   ~Index() {}
 
@@ -136,26 +175,30 @@ class Index {
     index_.buildIndex();
   }
 
-  // TODO: Throws an exception if doesn't have enough memory allocated for
-  // indices and dists
-  template<class T>
-  inline void KnnSearch(const SimMat<T>& query, SimMat<size_t>& indices,
-                 SimMat<T>& dists, size_t nn,
+  void KnnSearch(const SimMat<Value>& query, SimMat<size_t>& indices,
+                 SimMat<Value>& dists, size_t nn,
                  const SearchParams& params) {
-    ::flann::Matrix<T> fquery(query.Data());
+    if (indices.Size() != query.Rows()*nn)
+      ERISED_Error(Error::BAD_ALLOC, "Indices matrix has no enough size");
+
+    if (dists.Size() != query.Rows()*nn)
+      ERISED_Error(Error::BAD_ALLOC, "Indices matrix has no enough size");
+
+    ::flann::Matrix<Value> fquery(const_cast<Value*>(query.Data()),
+                                  query.Rows(), query.Cols());
 
     // TODO: Uses allocator insted of new operator
-    ::flann::Matrix<int> findices(new int[fquery.rows*nn], fquery.rows, nn);
-    ::flann::Matrix<T> fdists(new T[fquery.rows*nn], fquery.rows, nn);
+    ::flann::Matrix<size_t> findices(new size_t[fquery.rows*nn], fquery.rows, nn);
+    ::flann::Matrix<Value> fdists(new Value[fquery.rows*nn], fquery.rows, nn);
 
     index_.knnSearch(fquery, findices, fdists, nn, params);
 
-    dists.Data() = fdists.ptr();
-    indices.Data() = findices.ptr();
+//     dists.Data() = const_cast<Value*>(fdists.ptr());
+//     indices.Data() = const_cast<size_t*>(findices.ptr());
   }
 
  private:
-  Index<Distance> index_;
+  ::flann::Index<Distance> index_;
 };
 
 }}

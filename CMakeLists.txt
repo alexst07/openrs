@@ -21,6 +21,13 @@ endif()
 include(cmake/FLANN.cmake)
 include_directories(${FLANN_INCLUDE_DIRS})
 
+#
+# Boost support
+#
+find_package(Boost 1.58 REQUIRED)
+include_directories(${Boost_INCLUDE_DIR})
+
+
 if (WITH_TBB)
   find_package(TBB REQUIRED)
   set (HAVE_TBB ON)
@@ -43,6 +50,7 @@ configure_file(${CMAKE_SOURCE_DIR}/cmake/templates/config.h.in
                ${PROJECT_BINARY_DIR}/include/config.h)
 
 include_directories(${PROJECT_BINARY_DIR}/include/)
+include_directories(${CMAKE_SOURCE_DIR}/erised/core/src/)
 
 add_subdirectory(erised)
 
