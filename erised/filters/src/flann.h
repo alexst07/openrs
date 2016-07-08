@@ -43,16 +43,27 @@ class SimMat {
   using iterator = typename std::vector<T>::iterator;
   using const_iterator = typename std::vector<T>::const_iterator;
 
-  inline SimMat(): rows_(0), cols_(0) {}
+  inline SimMat(): rows_(0), cols_(0), delete_(false) {}
 
   inline SimMat(size_t rows, size_t cols)
-    : rows_(rows), cols_(cols), mat_(rows*cols) {}
+    : rows_(rows)
+    , cols_(cols)
+    , delete_(true)
+    ,mat_(new T[rows_*cols_], rows_, cols_) {}
+
+  inline SimMat(T* data, size_t rows, size_t cols)
+    : rows_(rows), cols_(cols), delete_(false), mat_(data, rows_, cols_) {}
 
   inline SimMat(const std::vector<T>& v, size_t rows, size_t cols)
-    : rows_(0), cols_(0), mat_(v) {}
+    : rows_(rows)
+    , cols_(cols)
+    , delete_(false)
+    , mat_(const_cast<T*>(v.data()), rows_, cols_) {}
 
-  inline SimMat(std::vector<T>&& v, size_t rows, size_t cols)
-    : rows_(0), cols_(0), mat_(std::move(v)) {}
+  inline ~SimMat() {
+    if (delete_)
+      delete mat_.ptr();
+  }
 
   inline T& operator()(size_t x, size_t y) {
     return mat_[cols_*x + y];
@@ -63,19 +74,15 @@ class SimMat {
   }
 
   inline const T* Data() const noexcept {
-    return mat_.data();
+    return mat_.ptr();
   }
 
   inline T* Data() noexcept {
-    return mat_.data();
-  }
-
-  inline size_t Size() const noexcept {
-    return  mat_.size();
+    return mat_.ptr();
   }
 
   inline size_t Capacity() const noexcept {
-    return  mat_.capacity();
+    return rows_ * cols_;
   }
 
   inline size_t Rows() const noexcept {
@@ -86,13 +93,35 @@ class SimMat {
     return cols_;
   }
 
+  inline ::flann::Matrix<T>& FlannMat() noexcept {
+    return mat_;
+  }
+
+  template<typename U>
+  friend std::ostream& operator<<(std::ostream& stream, const SimMat<U>& mat);
+
  private:
   size_t rows_;
   size_t cols_;
-  std::vector<T> mat_;
+  bool delete_;
+  ::flann::Matrix<T> mat_;
 };
 
+template<typename U>
+std::ostream& operator<<(std::ostream& stream, const SimMat<U>& mat) {
+  for (int i = 0; i < mat.rows_*mat.cols_; i++) {
+    stream << mat.mat_.ptr()[i] << " ";
 
+    if ((i + 1) % mat.cols_ == 0)
+      stream << "\n";
+  }
+
+  return stream;
+}
+
+/******************************************************************************
+ * Distance templates
+ *****************************************************************************/
 template<class T>
 using L2_Simple = struct ::flann::L2_Simple<T>;
 
@@ -131,7 +160,9 @@ using ChiSquareDistance = struct ::flann::ChiSquareDistance<T>;
 template<class T>
 using KL_Divergence = struct ::flann::KL_Divergence<T>;
 
-
+/******************************************************************************
+ * Index params for knn search
+ *****************************************************************************/
 typedef ::flann::IndexParams IndexParams;
 
 typedef ::flann::LinearIndexParams LinearIndexParams;
@@ -156,7 +187,9 @@ typedef ::flann::KDTreeIndexParams KDTreeIndexParams;
 
 typedef ::flann::KMeansIndexParams KMeansIndexParams;
 
-
+/******************************************************************************
+ * FLANN paramters as check, eps, max_neighbors, etc.
+ *****************************************************************************/
 typedef struct ::flann::SearchParams SearchParams;
 
 template<typename Distance>
@@ -178,23 +211,16 @@ class Index {
   void KnnSearch(const SimMat<Value>& query, SimMat<size_t>& indices,
                  SimMat<Value>& dists, size_t nn,
                  const SearchParams& params) {
-    if (indices.Size() != query.Rows()*nn)
+    if (indices.Capacity() != query.Rows()*nn)
       ERISED_Error(Error::BAD_ALLOC, "Indices matrix has no enough size");
 
-    if (dists.Size() != query.Rows()*nn)
+    if (dists.Capacity() != query.Rows()*nn)
       ERISED_Error(Error::BAD_ALLOC, "Indices matrix has no enough size");
 
     ::flann::Matrix<Value> fquery(const_cast<Value*>(query.Data()),
                                   query.Rows(), query.Cols());
 
-    // TODO: Uses allocator insted of new operator
-    ::flann::Matrix<size_t> findices(new size_t[fquery.rows*nn], fquery.rows, nn);
-    ::flann::Matrix<Value> fdists(new Value[fquery.rows*nn], fquery.rows, nn);
-
-    index_.knnSearch(fquery, findices, fdists, nn, params);
-
-//     dists.Data() = const_cast<Value*>(fdists.ptr());
-//     indices.Data() = const_cast<size_t*>(findices.ptr());
+    index_.knnSearch(fquery, indices.FlannMat(), dists.FlannMat(), nn, params);
   }
 
  private:
