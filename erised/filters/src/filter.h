@@ -6,9 +6,11 @@
 #include <vector>
 #include <array>
 #include <memory>
+#include <tuple>
 #include <flann/flann.hpp>
 
 #include "exception.h"
+#include "correlation.h"
 
 namespace erised {
 
@@ -20,13 +22,25 @@ template<class TD,
   template <typename, typename> class Data>
 class Filter {
  public:
-  Filter(bool normalize = true);
+  enum CorrelationType {
+    Pearson,
+    AdjustedCosine
+  };
+
+  Filter(CorrelationType type, size_t nn, bool normalize = true);
+  Filter(Sim<TD, Alloc>&& mat);
+  Filter(Sim<TD, Alloc>&& mat, Sim<size_t, Alloc>&& indices);
+
   void Fit(Data<TD, Alloc> &data);
   const Sim<TD, Alloc>& Similarity() const noexcept;
   Sim<TD, Alloc>& Similarity() noexcept;
+  SimMat<size_t, Alloc>&& Neighbors();
+  void Neighbors(SimMat<size_t, Alloc>&& dists);
 
   std::vector<TS> Predict(size_t i);
-
+ protected:
+  std::unique_ptr<Correlation> correlation_;
+  bool sim_set_;
 };
 
 }
