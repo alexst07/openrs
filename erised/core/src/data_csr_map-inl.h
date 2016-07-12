@@ -6,6 +6,7 @@
 #include <limits>
 #include <mutex>
 
+#include "data_csr_map.h"
 #include "parallel.h"
 
 namespace erised {
@@ -664,8 +665,8 @@ std::vector<T> DataCsrMap<T>::Map(Axis axis, Func&& fn) {
 }
 
 template<typename T>
-template<class Func>
-T DataCsrMap<T>::ReduceRows(size_t i1, size_t i2, Func&& fn) {
+template<class Func, size_t N>
+std::array<T,N> DataCsrMap<T>::ReduceRows(size_t i1, size_t i2, Func&& fn) {
   Range<size_t> range(0, size_cols_);
 
   auto row1 = rows_.at(i1);
@@ -673,8 +674,8 @@ T DataCsrMap<T>::ReduceRows(size_t i1, size_t i2, Func&& fn) {
 
   // Executes the function fn on all elments
   parallel_reduce(range, static_cast<T>(0),
-      [&](const Range<size_t>& r, T value) -> T {
-        T ret = value;
+      [&](const Range<size_t>& r, std::array<T,N> value) -> T {
+        std::array<T,N> rets = value;
         // Scan each line
         for(auto i = r.begin(); i!=r.end(); ++i) {
           auto it1 = row1->find(i);
@@ -682,25 +683,29 @@ T DataCsrMap<T>::ReduceRows(size_t i1, size_t i2, Func&& fn) {
 
           // Verify if column exists
           if ((it1 != it1->end()) && (it2 != it2->end()))
-            ret = fn(it1->second, it2->second, ret);
+            rets = fn(it1->second, it2->second, rets);
         }
 
-        return ret;
-  }, [&fn](T a, T b) -> T {
-    return a + b;
+        return rets;
+  }, [](std::array<T,N> a, std::array<T,N> b) -> T {
+    std::array<T,N> acc;
+    for (int i = 0; i < N; i++) {
+      acc[i] = a[i] + b[i];
+    }
+    return acc;
   });
 }
 
 template<typename T>
-template<class Func>
-T DataCsrMap<T>::ReduceCols(size_t i1, size_t i2, Func&& fn) {
+template<class Func, size_t N>
+std::array<T,N> DataCsrMap<T>::ReduceCols(size_t i1, size_t i2, Func&& fn) {
   // Gets all elements from line row_ref
   Range<ConstLineIter> range(rows_.begin(), rows_.end());
 
   // Executes the function fn on all elments
   parallel_reduce(range, static_cast<T>(0),
-      [&](const Range<ConstLineIter>& r, T value) -> T {
-        T ret = value;
+      [&](const Range<ConstLineIter>& r, std::array<T,N> value) -> T {
+        std::array<T,N> rets = value;
         // Scan each line
         for(auto i = r.begin(); i!=r.end(); ++i) {
           auto e1 = r->find(i1);
@@ -708,18 +713,22 @@ T DataCsrMap<T>::ReduceCols(size_t i1, size_t i2, Func&& fn) {
 
            // Verify if column exists
           if ((e1 != e1->end()) && (e2 != e2->end()))
-            ret = fn(e1->second, e2->second, ret);
+            rets = fn(e1->second, e2->second, rets);
         }
 
-          return ret;
-  }, [&fn](T a, T b) -> T {
-    return a + b;
+          return rets;
+  }, [](std::array<T,N> a, std::array<T,N> b) -> T {
+    std::array<T,N> acc;
+    for (int i = 0; i < N; i++) {
+      acc[i] = a[i] + b[i];
+    }
+    return acc;
   });
 }
 
 template<typename T>
-template<class Func>
-T DataCsrMap<T>::Reduce(Axis axis, size_t i1, size_t i2, Func&& fn) {
+template<class Func, size_t N>
+std::array<T,N> DataCsrMap<T>::Reduce(Axis axis, size_t i1, size_t i2, Func&& fn) {
   if (axis == Axis::ROW) {
     ReduceRows(i1, i2, fn);
   } else {

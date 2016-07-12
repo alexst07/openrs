@@ -75,8 +75,15 @@ class DataCsrMap: public DataBase<T> {
   template<class Func>
   std::vector<T> Map(Axis axis, Func&& fn);
 
-  template<class Func>
-  T Reduce(Axis axis, size_t i1, size_t i2, Func&& fn);
+  // This is the reduction function used for calculates similarities
+  // because on similarities is able to calculates two terms in only
+  // one interation, but to improve perfomance is better calculates
+  // the reduction for all lines or collumns in each iteration
+  template<class Func, size_t N>
+  std::vector<std::array<T,N>> Reduce(Axis axis, Func&& fn, Func&& fnm);
+
+  template<class Func, size_t N>
+  std::array<T,N> Reduce(Axis axis, size_t i1, size_t i2, Func&& fn);
 
   template<typename U>
   friend std::ostream& operator<<(std::ostream& stream, const DataCsrMap<U>& mat);
@@ -110,11 +117,11 @@ class DataCsrMap: public DataBase<T> {
 
   std::vector<T> MaxElemsCols();
 
-  template<class Func>
-  T ReduceRows(size_t i1, size_t i2, Func&& fn);
+  template<class Func, size_t N>
+  std::array<T,N> ReduceRows(size_t i1, size_t i2, Func&& fn);
 
-  template<class Func>
-  T ReduceCols(size_t i1, size_t i2, Func&& fn);
+  template<class Func, size_t N>
+  std::array<T,N> ReduceCols(size_t i1, size_t i2, Func&& fn);
 
   VecMap rows_;
 
