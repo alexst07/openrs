@@ -3,53 +3,88 @@
 
 #include "data_csr_map.h"
 
-TEST(Sample, Sampleunit) {
-  std::cout << "teste\n";
+template <class Data>
+class DataRatingTest : public ::testing::Test {
+ public:
+  Data mat_;
+
+  void SetUp() {
+      mat_ = Data{{0.44, 0.8, 0,   0,   0,   0,   0,   0,   0  },
+                  {0,    0.8, 1.4, 0,   0,   0,   1.7, 0,   0  },
+                  {0.22, 0,   0,   0.7, 0.4, 0,   0,   0,   0  },
+                  {0.22, 0,   0,   0,   0,   0.7, 0.7, 0.7, 0  },
+                  {0,    0,   0,   0.2, 0.4, 0,   0,   0,   0.7},
+                  {0.22, 0,   0,   0,   0.4, 0,   0.3, 0.1, 0  }};
+
+  }
+
+  void TearDown() {
+
+  }
+
+};
+
+TYPED_TEST_CASE_P(DataRatingTest);
+
+TYPED_TEST_P(DataRatingTest, Access) {
+  auto v = this->mat_({2,3});
+  ASSERT_FLOAT_EQ(0.7, v);
+
+  v = this->mat_({3,4});
+  ASSERT_FLOAT_EQ(0, v);
+
+  ASSERT_THROW(this->mat_({43,4}), erised::Exception);
+  ASSERT_THROW(this->mat_({4,40}), erised::Exception);
 }
 
+TYPED_TEST_P(DataRatingTest, MinMaxSingle) {
+  // Rows
+  auto v = this->mat_.Min(0, erised::Axis::ROW);
+  ASSERT_FLOAT_EQ(0.44, v);
 
-// template <typename T>
-// class TriangularMatTest : public ::testing::Test {
-//  public:
-//   static T shared_;
-//   std::vector<T> elems;
-//   erised::TriangularMat<T> mat_;
-//
-//   void SetUp() {
-//     mat_ = erised::TriangularMat<T>(4, {1, 2, 3, 4, 5, 6});
-//   }
-//
-//   void TearDown() {
-//
-//   }
-//
-// };
-//
-// TYPED_TEST_CASE_P(TriangularMatTest);
-//
-// TYPED_TEST_P(TriangularMatTest, Access) {
-//   auto row = TestFixture::mat_.Row(3);
-//
-//   std::cout << "row size: " << row.Size() << "\n";
-//   for (const auto& v : row)
-//     std::cout << v << ", ";
-//
-//   std::cout << "\n\n";
-//
-//   auto col = TestFixture::mat_.Col(2);
-//
-//   std::cout << "col size: " << col.Size() << "\n";
-//   for (const auto& v : col)
-//     std::cout << v << ", ";
-//
-//   std::cout << "\n\n";
-// }
-//
-// REGISTER_TYPED_TEST_CASE_P(TriangularMatTest,
-//                            Access);
-//
-// typedef ::testing::Types<int, float, double> Types;
-// INSTANTIATE_TYPED_TEST_CASE_P(My, TriangularMatTest, Types);
+  v = this->mat_.Min(1, erised::Axis::ROW);
+  ASSERT_FLOAT_EQ(0.8, v);
+
+  v = this->mat_.Min(2, erised::Axis::ROW);
+  ASSERT_FLOAT_EQ(0.22, v);
+
+  // Cols
+  v = this->mat_.Min(0, erised::Axis::COL);
+  ASSERT_FLOAT_EQ(0.22, v);
+
+  v = this->mat_.Min(1, erised::Axis::COL);
+  ASSERT_FLOAT_EQ(0.8, v);
+
+  v = this->mat_.Min(3, erised::Axis::COL);
+  ASSERT_FLOAT_EQ(0.2, v);
+
+  // Exceptions
+  ASSERT_THROW(this->mat_.Min(20, erised::Axis::ROW), erised::Exception);
+  ASSERT_THROW(this->mat_.Min(20, erised::Axis::COL), erised::Exception);
+}
+
+TYPED_TEST_P(DataRatingTest, MinMaxVec) {
+  // Rows
+  auto v = this->mat_.MinElemsRows();
+//   std::vector<float> vtest = {0.22, 0.8, 1.4, 0.7, 0.4, 0.7, 0.7, 0.7, 0.7};
+
+  std::vector<float> vtest = {0.44, 0.8, 0.22, 0.22, 0.2, 0.1};
+
+  int i = 0;
+  for (auto const& e: v) {
+    ASSERT_FLOAT_EQ(e, vtest[i]);
+    i++;
+  }
+}
+
+REGISTER_TYPED_TEST_CASE_P(DataRatingTest,
+                           Access,
+                           MinMaxSingle,
+                           MinMaxVec
+                          );
+
+typedef ::testing::Types<erised::DataCsrMap<float>> Types;
+INSTANTIATE_TYPED_TEST_CASE_P(My, DataRatingTest, Types);
 
 int main(int argc, char **argv) {
   ::testing::InitGoogleTest(&argc, argv);

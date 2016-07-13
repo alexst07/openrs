@@ -24,6 +24,7 @@ class DataCsrMap: public DataBase<T> {
   using ColIter = typename std::unordered_map<size_type, T>::iterator;
   using ConstColIter = typename std::unordered_map<size_type, T>::iterator;
   typedef Alloc allocator_type;
+  typedef T value_type;
 
   static const int INVALID_LINE;
 
@@ -75,6 +76,14 @@ class DataCsrMap: public DataBase<T> {
 
   T Max(Axis axis);
 
+  std::vector<T> MinElemsRows();
+
+  std::vector<T> MinElemsCols();
+
+  std::vector<T> MaxElemsRows();
+
+  std::vector<T> MaxElemsCols();
+
   template<class Func>
   std::vector<T> Reduce(Axis axis, Func&& fn);
 
@@ -115,14 +124,6 @@ class DataCsrMap: public DataBase<T> {
   T MaxElemRow(size_t i);
 
   T MaxElemCol(size_t i);
-
-  std::vector<T> MinElemsRows();
-
-  std::vector<T> MinElemsCols();
-
-  std::vector<T> MaxElemsRows();
-
-  std::vector<T> MaxElemsCols();
 
   template<class Func, size_t N>
   std::array<T,N> ReduceRows(size_t i1, size_t i2, Func&& fn);

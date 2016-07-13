@@ -6,6 +6,7 @@
 #include <limits>
 #include <mutex>
 
+#include "exception.h"
 #include "data_csr_map.h"
 #include "parallel.h"
 
@@ -74,12 +75,14 @@ DataCsrMap<T, Alloc>::DataCsrMap(size_type rows, size_type cols,
 
 template<typename T, typename Alloc>
 DataCsrMap<T, Alloc>::DataCsrMap(const DataCsrMap<T, Alloc>& m)
-  : rows_(m.rows_) {
+  : rows_(m.rows_), size_rows_(m.size_rows_), size_cols_(m.size_cols_) {
 }
 
 template<typename T, typename Alloc>
 DataCsrMap<T, Alloc>::DataCsrMap(DataCsrMap<T, Alloc>&& m)
-  : rows_(std::move(m.rows_)) {
+  : rows_(std::move(m.rows_), size_rows_(m.size_rows_), size_cols_(m.size_cols_)) {
+  m.size_rows_ = 0;
+  m.size_cols_ = 0;
 }
 
 template<typename T, typename Alloc>
@@ -88,6 +91,8 @@ DataCsrMap<T, Alloc>& DataCsrMap<T, Alloc>::operator=(
   // self-assignment check
   if (this != &m) {
     rows_ = m.rows_;
+    size_cols_ = m.size_cols_;
+    size_rows_ = m.size_rows_;
   }
 
   return *this;
@@ -97,6 +102,8 @@ template<typename T, typename Alloc>
 DataCsrMap<T, Alloc>& DataCsrMap<T, Alloc>::operator=(
     DataCsrMap<T, Alloc>&& m) {
   rows_ = std::move(m.rows_);
+  size_cols_ = m.size_cols_;
+  size_rows_ = m.size_rows_;
 
   return *this;
 }
@@ -120,14 +127,14 @@ T DataCsrMap<T, Alloc>::operator()(const Pos<DataBase<T>::order>& pos) const {
   size_t x = pos.X();
   size_t y = pos.Y();
 
-  std::cout << "x: " << x << "y: " << y << "\n";
-
   // Check if is a valid coordenate
   if (x > size_rows_)
-    throw std::out_of_range("row x is greater or equal than its x size");
+    ERISED_Error(Error::OUT_OF_RANGE, "value of x is greater or equal than %d",
+                 size_rows_ - 1);
 
   if (y > size_cols_)
-    throw std::out_of_range("col y is greater or equal than its y size");
+    ERISED_Error(Error::OUT_OF_RANGE, "value of y is greater or equal than %d",
+                 size_cols_ - 1);
 
   // Gets the line of vector
   auto map_row = rows_.at(x);
@@ -365,6 +372,10 @@ T DataCsrMap<T, Alloc>::Min(size_t i, Axis axis) {
 
 template<typename T, typename Alloc>
 T DataCsrMap<T, Alloc>::MinElemRow(size_t i) {
+  if (i > size_rows_)
+    ERISED_Error(Error::OUT_OF_RANGE, "value is greater or equal than %d",
+                 size_rows_ - 1);
+
   T min = std::numeric_limits<T>::max();
 
   // Gets the map pointed by the row_ref
@@ -384,6 +395,10 @@ T DataCsrMap<T, Alloc>::MinElemRow(size_t i) {
 
 template<typename T, typename Alloc>
 T DataCsrMap<T, Alloc>::MinElemCol(size_t i) {
+  if (i > size_cols_)
+    ERISED_Error(Error::OUT_OF_RANGE, "value is greater or equal than %d",
+                 size_cols_ - 1);
+
   std::atomic<T> min(std::numeric_limits<T>::max());
 
   // Gets all lines
@@ -468,14 +483,16 @@ template<typename T, typename Alloc>
 std::vector<T> DataCsrMap<T, Alloc>::MinElemsRows() {
   std::vector<T> min_elems(size_rows_);
 
-  // Gets all elements
-  Range<ConstLineIter> range(rows_.begin(), rows_.end());
+  // Gets all lines
+  Range<LineIter> range(rows_.begin(), rows_.end());
 
-  // Executes the function fn on all elments
-  parallel_for(range, [&](const Range<ConstLineIter>& r) {
+  // Gets all min elements at time
+  parallel_for(range, [&](const Range<LineIter>& r) {
     // Scan each line
     for(auto i = r.begin(); i!=r.end(); ++i) {
         auto dist = std::distance(rows_.begin(), i);
+
+        // Gets the minimum element on row
         min_elems[dist] = MinElemRow(dist);
     }
   });
