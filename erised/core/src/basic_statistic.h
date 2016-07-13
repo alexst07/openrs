@@ -1,6 +1,7 @@
 #pragma once
 
 #include <stdexcept>
+#include <vector>
 #include <cmath>
 
 #include "data_base.h"
@@ -9,8 +10,8 @@
 namespace erised {
 namespace internal {
 
-template<class T, template<typename> class Data>
-T Avarage(const Data<T>& data, size_t i, Axis axis, size_t num_elems) {
+template<class T, class Alloc, template<typename, typename> class Data>
+T Avarage(const Data<T, Alloc>& data, size_t i, Axis axis, size_t num_elems) {
   T sum;
 
   if (axis == Axis::ROW) {
@@ -91,8 +92,8 @@ std::vector<T> Avarage(const Data<T>& data, Axis axis) {
   return sums/ static_cast<T>(num_elems);
 }
 
-template<class T, template<typename> class Data>
-T Avarage(const Data<T>& data, size_t i, Axis axis) {
+template<class T, class Alloc, template<typename, typename> class Data>
+T Avarage(const Data<T, Alloc>& data, size_t i, Axis axis) {
   size_t num_elems = 0;
 
   if (axis == Axis::ROW) {
@@ -106,8 +107,8 @@ T Avarage(const Data<T>& data, size_t i, Axis axis) {
   return internal::Avarage(data, i, axis, num_elems);
 }
 
-template<class T, template<typename> class Data>
-T Variance(const Data<T>& data, size_t i, Axis axis) {
+template<class T, class Alloc, template<typename, typename> class Data>
+T Variance(const Data<T, Alloc>& data, size_t i, Axis axis) {
   size_t n = 0;
 
   if (axis == Axis::ROW) {
@@ -128,8 +129,8 @@ T Variance(const Data<T>& data, size_t i, Axis axis) {
   return res;
 }
 
-template<class T, template<typename> class Data>
-T Variance(const Data<T>& data, size_t i, Axis axis, size_t n) {
+template<class T, class Alloc, template<typename, typename> class Data>
+T Variance(const Data<T, Alloc>& data, size_t i, Axis axis, size_t n) {
   T u = internal::Avarage(data, i, axis, n);
   T x2;
 
@@ -147,8 +148,8 @@ T Variance(const Data<T>& data, size_t i, Axis axis, size_t n) {
   return res;
 }
 
-template<class T, template<typename> class Data>
-std::vector<T> Variance(const Data<T>& data, Axis axis,
+template<class T, class Alloc, template<typename, typename> class Data>
+std::vector<T> Variance(const Data<T, Alloc>& data, Axis axis,
                         const std::vector<size_t>& n) {
   using vec_it = typename std::vector<T>::iterator;
   std::vector<T> u = Avarage(data, axis, n);
@@ -174,20 +175,20 @@ std::vector<T> Variance(const Data<T>& data, Axis axis,
   return std::move(res);
 }
 
-template<class T, template<typename> class Data>
-T StandardDeviation(const Data<T>& data, size_t i, Axis axis) {
+template<class T, class Alloc, template<typename, typename> class Data>
+T StandardDeviation(const Data<T, Alloc>& data, size_t i, Axis axis) {
   T variance = Variance(data, i, axis);
   return std::sqrt(variance);
 }
 
-template<class T, template<typename> class Data>
-T StandardDeviation(const Data<T>& data, size_t i, Axis axis, size_t n) {
+template<class T, class Alloc, template<typename, typename> class Data>
+T StandardDeviation(const Data<T, Alloc>& data, size_t i, Axis axis, size_t n) {
   T variance = Variance(data, i, axis, n);
   return std::sqrt(variance);
 }
 
-template<class T, template<typename> class Data>
-std::vector<T> StandardDeviation(const Data<T>& data, Axis axis,
+template<class T, class Alloc, template<typename, typename> class Data>
+std::vector<T> StandardDeviation(const Data<T, Alloc>& data, Axis axis,
                                  const std::vector<size_t>& n) {
   using vec_it = typename std::vector<T>::iterator;
 
@@ -206,8 +207,8 @@ std::vector<T> StandardDeviation(const Data<T>& data, Axis axis,
   return std::move(res);
 }
 
-template<class T, template<typename> class Data>
-void Standardization(Data<T>* data, size_t i, Axis axis, size_t n) {
+template<class T, class Alloc, template<typename, typename> class Data>
+void Standardization(Data<T, Alloc>* data, size_t i, Axis axis, size_t n) {
   T u = Avarage(*data, i, axis, n);
   T a = StandardDeviation(*data, i, axis, n);
 
@@ -218,16 +219,16 @@ void Standardization(Data<T>* data, size_t i, Axis axis, size_t n) {
   }
 }
 
-template<class T, template<typename> class Data>
-void Standardization(Data<T>* data, Axis axis, const std::vector<size_t>& n) {
+template<class T, class Alloc, template<typename, typename> class Data>
+void Standardization(Data<T, Alloc>* data, Axis axis, const std::vector<size_t>& n) {
   std::vector<T> u = Avarage(*data, axis, n);
   std::vector<T> a = StandardDeviation(*data, axis, n);
 
   data->Map(axis, [&u, &a](size_t i, T x) -> T { return (x - u[i])/a[a]; });
 }
 
-template<class T, template<typename> class Data>
-void Standardization(Data<T>* data, size_t i, Axis axis) {
+template<class T, class Alloc, template<typename, typename> class Data>
+void Standardization(Data<T, Alloc>* data, size_t i, Axis axis) {
   size_t n;
 
   if (axis == Axis::ROW) {

@@ -12,17 +12,19 @@
 namespace erised {
 
 // define const variables
-template<typename T>
-const int DataCsrMap<T>::INVALID_LINE = -1;
+template<typename T, typename Alloc>
+const int DataCsrMap<T, Alloc>::INVALID_LINE = -1;
 
-template<typename T>
-DataCsrMap<T>::DataCsrMap()
+template<typename T, typename Alloc>
+DataCsrMap<T, Alloc>::DataCsrMap(const allocator_type& a)
   : size_rows_(0)
   , size_cols_(0) {
 }
 
-template<typename T>
-DataCsrMap<T>::DataCsrMap(std::initializer_list<std::initializer_list<T>> set) {
+template<typename T, typename Alloc>
+DataCsrMap<T, Alloc>::DataCsrMap(
+    std::initializer_list<std::initializer_list<T>> set,
+    const allocator_type& a) {
   size_type i = 0;
   size_type max_col = 0;
   size_type num_rows = 0;
@@ -63,24 +65,26 @@ DataCsrMap<T>::DataCsrMap(std::initializer_list<std::initializer_list<T>> set) {
   size_rows_ = set.size();
 }
 
-template<typename T>
-DataCsrMap<T>::DataCsrMap(size_type rows, size_type cols)
+template<typename T, typename Alloc>
+DataCsrMap<T, Alloc>::DataCsrMap(size_type rows, size_type cols,
+                                 const allocator_type& a)
   : size_rows_(rows)
   , size_cols_(cols) {
 }
 
-template<typename T>
-DataCsrMap<T>::DataCsrMap(const DataCsrMap<T>& m)
+template<typename T, typename Alloc>
+DataCsrMap<T, Alloc>::DataCsrMap(const DataCsrMap<T, Alloc>& m)
   : rows_(m.rows_) {
 }
 
-template<typename T>
-DataCsrMap<T>::DataCsrMap(DataCsrMap<T>&& m)
+template<typename T, typename Alloc>
+DataCsrMap<T, Alloc>::DataCsrMap(DataCsrMap<T, Alloc>&& m)
   : rows_(std::move(m.rows_)) {
 }
 
-template<typename T>
-DataCsrMap<T>& DataCsrMap<T>::operator=(const DataCsrMap<T>& m) {
+template<typename T, typename Alloc>
+DataCsrMap<T, Alloc>& DataCsrMap<T, Alloc>::operator=(
+    const DataCsrMap<T, Alloc>& m) {
   // self-assignment check
   if (this != &m) {
     rows_ = m.rows_;
@@ -89,15 +93,17 @@ DataCsrMap<T>& DataCsrMap<T>::operator=(const DataCsrMap<T>& m) {
   return *this;
 }
 
-template<typename T>
-DataCsrMap<T>& DataCsrMap<T>::operator=(DataCsrMap<T>&& m) {
+template<typename T, typename Alloc>
+DataCsrMap<T, Alloc>& DataCsrMap<T, Alloc>::operator=(
+    DataCsrMap<T, Alloc>&& m) {
   rows_ = std::move(m.rows_);
 
   return *this;
 }
 
-template<typename U>
-std::ostream& operator<<(std::ostream& stream, const DataCsrMap<U>& mat) {
+template<typename U, typename _Alloc>
+std::ostream& operator<<(std::ostream& stream,
+                         const DataCsrMap<U, _Alloc>& mat) {
   stream << "rows vector: ";
   for (const auto& r: mat.rows_) {
     for (const auto& m: r) {
@@ -109,8 +115,8 @@ std::ostream& operator<<(std::ostream& stream, const DataCsrMap<U>& mat) {
   return stream;
 }
 
-template<typename T>
-T DataCsrMap<T>::operator()(const Pos<DataBase<T>::order>& pos) const {
+template<typename T, typename Alloc>
+T DataCsrMap<T, Alloc>::operator()(const Pos<DataBase<T>::order>& pos) const {
   size_t x = pos.X();
   size_t y = pos.Y();
 
@@ -135,13 +141,13 @@ T DataCsrMap<T>::operator()(const Pos<DataBase<T>::order>& pos) const {
   return 0;
 }
 
-template<typename T>
-T DataCsrMap<T>::operator()(size_type x, size_type y) const {
+template<typename T, typename Alloc>
+T DataCsrMap<T, Alloc>::operator()(size_type x, size_type y) const {
   return this->operator()({x, y});
 }
 
-template<typename T>
-size_t DataCsrMap<T>::NumElements() const {
+template<typename T, typename Alloc>
+size_t DataCsrMap<T, Alloc>::NumElements() const {
   size_t num_elems = 0;
 
   // Sum the number of elements on map for each row
@@ -152,13 +158,13 @@ size_t DataCsrMap<T>::NumElements() const {
   return num_elems;
 }
 
-template<typename T>
-size_t DataCsrMap<T>::NumElementsLine(size_t i) const {
+template<typename T, typename Alloc>
+size_t DataCsrMap<T, Alloc>::NumElementsLine(size_t i) const {
   return rows_.at(i).size();
 }
 
-template<typename T>
-std::vector<size_t>  DataCsrMap<T>::NumElementsLines() const {
+template<typename T, typename Alloc>
+std::vector<size_t>  DataCsrMap<T, Alloc>::NumElementsLines() const {
   std::vector<size_t> rets(size_rows_);
   // Gets all lines
   Range<LineIter> range(rows_.begin(), rows_.end());
@@ -177,8 +183,8 @@ std::vector<size_t>  DataCsrMap<T>::NumElementsLines() const {
   return rets;
 }
 
-template<typename T>
-size_t DataCsrMap<T>::NumElementsCol(size_t i) const {
+template<typename T, typename Alloc>
+size_t DataCsrMap<T, Alloc>::NumElementsCol(size_t i) const {
   std::atomic<size_t> num_elems(0);
 
   // Gets all lines
@@ -199,8 +205,8 @@ size_t DataCsrMap<T>::NumElementsCol(size_t i) const {
   return num_elems;
 }
 
-template<typename T>
-std::vector<size_t>  DataCsrMap<T>::NumElementsCols() const {
+template<typename T, typename Alloc>
+std::vector<size_t>  DataCsrMap<T, Alloc>::NumElementsCols() const {
   std::vector<size_t> num_elems(size_cols_);
   std::vector<std::mutex> mtxv(size_cols_);
 
@@ -227,8 +233,8 @@ std::vector<size_t>  DataCsrMap<T>::NumElementsCols() const {
   return num_elems;
 }
 
-template<typename T>
-void DataCsrMap<T>::ColMap(size_t i, MapFn fn) {
+template<typename T, typename Alloc>
+void DataCsrMap<T, Alloc>::ColMap(size_t i, MapFn fn) {
   // Gets all lines
   Range<LineIter> range(rows_.begin(), rows_.end());
 
@@ -245,8 +251,8 @@ void DataCsrMap<T>::ColMap(size_t i, MapFn fn) {
   });
 }
 
-template<typename T>
-T DataCsrMap<T>::ColReduce(size_t i, const ReduceFn& fn) const {
+template<typename T, typename Alloc>
+T DataCsrMap<T, Alloc>::ColReduce(size_t i, const ReduceFn& fn) const {
   // Gets all lines
   Range<ConstLineIter> range(rows_.begin(), rows_.end());
 
@@ -271,8 +277,8 @@ T DataCsrMap<T>::ColReduce(size_t i, const ReduceFn& fn) const {
   });
 }
 
-template<typename T>
-void DataCsrMap<T>::Map(const MapFn& fn) {
+template<typename T, typename Alloc>
+void DataCsrMap<T, Alloc>::Map(const MapFn& fn) {
   // Gets all elements
   Range<LineIter> range(rows_.begin(), rows_.end());
 
@@ -286,8 +292,8 @@ void DataCsrMap<T>::Map(const MapFn& fn) {
   });
 }
 
-template<typename T>
-T DataCsrMap<T>::Reduce(const ReduceFn& fn) const {
+template<typename T, typename Alloc>
+T DataCsrMap<T, Alloc>::Reduce(const ReduceFn& fn) const {
   // Gets all elements
   Range<ConstLineIter> range(rows_.begin(), rows_.end());
 
@@ -307,8 +313,8 @@ T DataCsrMap<T>::Reduce(const ReduceFn& fn) const {
   });
 }
 
-template<typename T>
-void DataCsrMap<T>::RowMap(size_t i, MapFn fn) {
+template<typename T, typename Alloc>
+void DataCsrMap<T, Alloc>::RowMap(size_t i, MapFn fn) {
   auto row_ref = rows_.begin() + i;
   // Gets all elements from line row_ref
   Range<LineIter> range(row_ref, row_ref + 1);
@@ -326,8 +332,8 @@ void DataCsrMap<T>::RowMap(size_t i, MapFn fn) {
   });
 }
 
-template<typename T>
-T DataCsrMap<T>::RowReduce(size_t i, const ReduceFn& fn) const {
+template<typename T, typename Alloc>
+T DataCsrMap<T, Alloc>::RowReduce(size_t i, const ReduceFn& fn) const {
   auto row_ref = rows_.begin() + i;
   // Gets all elements from line row_ref
   Range<ConstLineIter> range(row_ref, row_ref + 1);
@@ -348,8 +354,8 @@ T DataCsrMap<T>::RowReduce(size_t i, const ReduceFn& fn) const {
   });
 }
 
-template<typename T>
-T DataCsrMap<T>::Min(size_t i, Axis axis) {
+template<typename T, typename Alloc>
+T DataCsrMap<T, Alloc>::Min(size_t i, Axis axis) {
   if (axis == Axis::ROW) {
     return MinElemRow(i);
   } else {
@@ -357,8 +363,8 @@ T DataCsrMap<T>::Min(size_t i, Axis axis) {
   }
 }
 
-template<typename T>
-T DataCsrMap<T>::MinElemRow(size_t i) {
+template<typename T, typename Alloc>
+T DataCsrMap<T, Alloc>::MinElemRow(size_t i) {
   T min = std::numeric_limits<T>::max();
 
   // Gets the map pointed by the row_ref
@@ -376,8 +382,8 @@ T DataCsrMap<T>::MinElemRow(size_t i) {
   return min;
 }
 
-template<typename T>
-T DataCsrMap<T>::MinElemCol(size_t i) {
+template<typename T, typename Alloc>
+T DataCsrMap<T, Alloc>::MinElemCol(size_t i) {
   std::atomic<T> min(std::numeric_limits<T>::max());
 
   // Gets all lines
@@ -403,8 +409,8 @@ T DataCsrMap<T>::MinElemCol(size_t i) {
   return min;
 }
 
-template<typename T>
-T DataCsrMap<T>::Max(size_t i, Axis axis) {
+template<typename T, typename Alloc>
+T DataCsrMap<T, Alloc>::Max(size_t i, Axis axis) {
   if (axis == Axis::ROW) {
     return MaxElemRow(i);
   } else {
@@ -412,8 +418,8 @@ T DataCsrMap<T>::Max(size_t i, Axis axis) {
   }
 }
 
-template<typename T>
-T DataCsrMap<T>::MaxElemRow(size_t i) {
+template<typename T, typename Alloc>
+T DataCsrMap<T, Alloc>::MaxElemRow(size_t i) {
   T max = std::numeric_limits<T>::min();
 
   // Gets the map pointed by the row_ref
@@ -431,8 +437,8 @@ T DataCsrMap<T>::MaxElemRow(size_t i) {
   return max;
 }
 
-template<typename T>
-T DataCsrMap<T>::MaxElemCol(size_t i) {
+template<typename T, typename Alloc>
+T DataCsrMap<T, Alloc>::MaxElemCol(size_t i) {
   std::atomic<T> max(std::numeric_limits<T>::min());
 
   // Gets all lines
@@ -458,8 +464,8 @@ T DataCsrMap<T>::MaxElemCol(size_t i) {
   return max;
 }
 
-template<typename T>
-std::vector<T> DataCsrMap<T>::MinElemsRows() {
+template<typename T, typename Alloc>
+std::vector<T> DataCsrMap<T, Alloc>::MinElemsRows() {
   std::vector<T> min_elems(size_rows_);
 
   // Gets all elements
@@ -477,8 +483,8 @@ std::vector<T> DataCsrMap<T>::MinElemsRows() {
   return std::move(min_elems);
 }
 
-template<typename T>
-std::vector<T> DataCsrMap<T>::MinElemsCols() {
+template<typename T, typename Alloc>
+std::vector<T> DataCsrMap<T, Alloc>::MinElemsCols() {
   std::vector<T> min_elems(size_cols_, std::numeric_limits<T>::max());
   std::vector<std::mutex> mtxv(size_cols_);
 
@@ -508,8 +514,8 @@ std::vector<T> DataCsrMap<T>::MinElemsCols() {
   return std::move(min_elems);
 }
 
-template<typename T>
-std::vector<T> DataCsrMap<T>::MaxElemsRows() {
+template<typename T, typename Alloc>
+std::vector<T> DataCsrMap<T, Alloc>::MaxElemsRows() {
   std::vector<T> min_elems(size_rows_);
 
   // Gets all elements
@@ -527,8 +533,8 @@ std::vector<T> DataCsrMap<T>::MaxElemsRows() {
   return std::move(min_elems);
 }
 
-template<typename T>
-std::vector<T> DataCsrMap<T>::MaxElemsCols() {
+template<typename T, typename Alloc>
+std::vector<T> DataCsrMap<T, Alloc>::MaxElemsCols() {
   std::vector<T> max_elems(size_cols_, std::numeric_limits<T>::min());
   std::vector<std::mutex> mtxv(size_cols_);
 
@@ -558,9 +564,9 @@ std::vector<T> DataCsrMap<T>::MaxElemsCols() {
   return std::move(max_elems);
 }
 
-template<typename T>
+template<typename T, typename Alloc>
 template<class Func>
-std::vector<T> DataCsrMap<T>::ReduceCols(Func&& fn) {
+std::vector<T> DataCsrMap<T, Alloc>::ReduceCols(Func&& fn) {
   std::vector<T> rets(size_cols_);
   std::vector<std::mutex> mtxv(size_cols_);
 
@@ -582,9 +588,9 @@ std::vector<T> DataCsrMap<T>::ReduceCols(Func&& fn) {
   return std::move(rets);
 }
 
-template<typename T>
+template<typename T, typename Alloc>
 template<class Func>
-std::vector<T> DataCsrMap<T>::ReduceRows(Func&& fn) {
+std::vector<T> DataCsrMap<T, Alloc>::ReduceRows(Func&& fn) {
   std::vector<T> rets(size_rows_);
 
   // Gets all elements
@@ -604,9 +610,9 @@ std::vector<T> DataCsrMap<T>::ReduceRows(Func&& fn) {
   return std::move(rets);
 }
 
-template<typename T>
+template<typename T, typename Alloc>
 template<class Func>
-std::vector<T> DataCsrMap<T>::Reduce(Axis axis, Func&& fn) {
+std::vector<T> DataCsrMap<T, Alloc>::Reduce(Axis axis, Func&& fn) {
   if (axis == Axis::ROW) {
     return std::move(ReduceRows(fn));
   } else {
@@ -614,9 +620,9 @@ std::vector<T> DataCsrMap<T>::Reduce(Axis axis, Func&& fn) {
   }
 }
 
-template<typename T>
+template<typename T, typename Alloc>
 template<class Func>
-std::vector<T> DataCsrMap<T>::MapCols(Func&& fn) {
+std::vector<T> DataCsrMap<T, Alloc>::MapCols(Func&& fn) {
   // Gets all lines
   Range<LineIter> range(rows_.begin(), rows_.end());
 
@@ -635,9 +641,9 @@ std::vector<T> DataCsrMap<T>::MapCols(Func&& fn) {
   });
 }
 
-template<typename T>
+template<typename T, typename Alloc>
 template<class Func>
-std::vector<T> DataCsrMap<T>::MapRows(Func&& fn) {
+std::vector<T> DataCsrMap<T, Alloc>::MapRows(Func&& fn) {
   // Gets all lines
   Range<LineIter> range(rows_.begin(), rows_.end());
 
@@ -654,9 +660,9 @@ std::vector<T> DataCsrMap<T>::MapRows(Func&& fn) {
   });
 }
 
-template<typename T>
+template<typename T, typename Alloc>
 template<class Func>
-std::vector<T> DataCsrMap<T>::Map(Axis axis, Func&& fn) {
+std::vector<T> DataCsrMap<T, Alloc>::Map(Axis axis, Func&& fn) {
   if (axis == Axis::ROW) {
     MapRows(fn);
   } else {
@@ -664,9 +670,10 @@ std::vector<T> DataCsrMap<T>::Map(Axis axis, Func&& fn) {
   }
 }
 
-template<typename T>
+template<typename T, typename Alloc>
 template<class Func, size_t N>
-std::array<T,N> DataCsrMap<T>::ReduceRows(size_t i1, size_t i2, Func&& fn) {
+std::array<T,N> DataCsrMap<T, Alloc>::ReduceRows(size_t i1, size_t i2,
+                                                 Func&& fn) {
   Range<size_t> range(0, size_cols_);
 
   auto row1 = rows_.at(i1);
@@ -696,9 +703,10 @@ std::array<T,N> DataCsrMap<T>::ReduceRows(size_t i1, size_t i2, Func&& fn) {
   });
 }
 
-template<typename T>
+template<typename T, typename Alloc>
 template<class Func, size_t N>
-std::array<T,N> DataCsrMap<T>::ReduceCols(size_t i1, size_t i2, Func&& fn) {
+std::array<T,N> DataCsrMap<T, Alloc>::ReduceCols(size_t i1, size_t i2,
+                                                 Func&& fn) {
   // Gets all elements from line row_ref
   Range<ConstLineIter> range(rows_.begin(), rows_.end());
 
@@ -726,9 +734,10 @@ std::array<T,N> DataCsrMap<T>::ReduceCols(size_t i1, size_t i2, Func&& fn) {
   });
 }
 
-template<typename T>
+template<typename T, typename Alloc>
 template<class Func, size_t N>
-std::array<T,N> DataCsrMap<T>::Reduce(Axis axis, size_t i1, size_t i2, Func&& fn) {
+std::array<T,N> DataCsrMap<T, Alloc>::Reduce(Axis axis, size_t i1, size_t i2,
+                                             Func&& fn) {
   if (axis == Axis::ROW) {
     ReduceRows(i1, i2, fn);
   } else {
