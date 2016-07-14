@@ -23,6 +23,8 @@ class DataCsrMap: public DataBase<T> {
   using ConstLineIter = typename VecMap::const_iterator;
   using ColIter = typename std::unordered_map<size_type, T>::iterator;
   using ConstColIter = typename std::unordered_map<size_type, T>::iterator;
+  using VectorValue = typename std::vector<T, Alloc>;
+  using VectorSize = typename std::vector<size_t, Alloc>;
   typedef Alloc allocator_type;
   typedef T value_type;
 
@@ -64,9 +66,9 @@ class DataCsrMap: public DataBase<T> {
 
   size_t NumElementsCol(size_t i) const override;
 
-  std::vector<size_t> NumElementsLines() const;
+  VectorSize NumElementsLines() const;
 
-  std::vector<size_t> NumElementsCols() const;
+  VectorSize NumElementsCols() const;
 
   T Min(size_t i, Axis axis);
 
@@ -76,19 +78,19 @@ class DataCsrMap: public DataBase<T> {
 
   T Max(Axis axis);
 
-  std::vector<T> MinElemsRows();
+  VectorValue MinElemsRows();
 
-  std::vector<T> MinElemsCols();
+  VectorValue MinElemsCols();
 
-  std::vector<T> MaxElemsRows();
+  VectorValue MaxElemsRows();
 
-  std::vector<T> MaxElemsCols();
-
-  template<class Func>
-  std::vector<T> Reduce(Axis axis, Func&& fn);
+  VectorValue MaxElemsCols();
 
   template<class Func>
-  std::vector<T> Map(Axis axis, Func&& fn);
+  VectorValue Reduce(Axis axis, Func&& fn);
+
+  template<class Func>
+  VectorValue Map(Axis axis, Func&& fn);
 
   // This is the reduction function used for calculates similarities
   // because on similarities is able to calculates two terms in only
@@ -106,16 +108,16 @@ class DataCsrMap: public DataBase<T> {
 
  private:
   template<class Func>
-  std::vector<T> ReduceCols(Func&& fn);
+  VectorValue ReduceCols(Func&& fn);
 
   template<class Func>
-  std::vector<T> ReduceRows(Func&& fn);
+  VectorValue ReduceRows(Func&& fn);
 
   template<class Func>
-  std::vector<T> MapCols(Func&& fn);
+  VectorValue MapCols(Func&& fn);
 
   template<class Func>
-  std::vector<T> MapRows(Func&& fn);
+  VectorValue MapRows(Func&& fn);
 
   T MinElemRow(size_t i);
 

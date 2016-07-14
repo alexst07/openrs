@@ -171,8 +171,8 @@ size_t DataCsrMap<T, Alloc>::NumElementsLine(size_t i) const {
 }
 
 template<typename T, typename Alloc>
-std::vector<size_t>  DataCsrMap<T, Alloc>::NumElementsLines() const {
-  std::vector<size_t> rets(size_rows_);
+std::vector<size_t, Alloc> DataCsrMap<T, Alloc>::NumElementsLines() const {
+  VectorSize rets(size_rows_);
   // Gets all lines
   Range<LineIter> range(rows_.begin(), rows_.end());
 
@@ -213,8 +213,8 @@ size_t DataCsrMap<T, Alloc>::NumElementsCol(size_t i) const {
 }
 
 template<typename T, typename Alloc>
-std::vector<size_t>  DataCsrMap<T, Alloc>::NumElementsCols() const {
-  std::vector<size_t> num_elems(size_cols_);
+std::vector<size_t, Alloc>  DataCsrMap<T, Alloc>::NumElementsCols() const {
+  VectorSize num_elems(size_cols_);
   std::vector<std::mutex> mtxv(size_cols_);
 
   // Gets all lines
@@ -480,8 +480,8 @@ T DataCsrMap<T, Alloc>::MaxElemCol(size_t i) {
 }
 
 template<typename T, typename Alloc>
-std::vector<T> DataCsrMap<T, Alloc>::MinElemsRows() {
-  std::vector<T> min_elems(size_rows_);
+std::vector<T, Alloc> DataCsrMap<T, Alloc>::MinElemsRows() {
+  VectorValue min_elems(size_rows_);
 
   // Gets all lines
   Range<LineIter> range(rows_.begin(), rows_.end());
@@ -501,8 +501,8 @@ std::vector<T> DataCsrMap<T, Alloc>::MinElemsRows() {
 }
 
 template<typename T, typename Alloc>
-std::vector<T> DataCsrMap<T, Alloc>::MinElemsCols() {
-  std::vector<T> min_elems(size_cols_, std::numeric_limits<T>::max());
+std::vector<T, Alloc> DataCsrMap<T, Alloc>::MinElemsCols() {
+  VectorValue min_elems(size_cols_, std::numeric_limits<T>::max());
   std::vector<std::mutex> mtxv(size_cols_);
 
   // Gets all lines
@@ -532,8 +532,8 @@ std::vector<T> DataCsrMap<T, Alloc>::MinElemsCols() {
 }
 
 template<typename T, typename Alloc>
-std::vector<T> DataCsrMap<T, Alloc>::MaxElemsRows() {
-  std::vector<T> min_elems(size_rows_);
+std::vector<T, Alloc> DataCsrMap<T, Alloc>::MaxElemsRows() {
+  VectorValue min_elems(size_rows_);
 
   // Gets all elements
   Range<ConstLineIter> range(rows_.begin(), rows_.end());
@@ -551,8 +551,8 @@ std::vector<T> DataCsrMap<T, Alloc>::MaxElemsRows() {
 }
 
 template<typename T, typename Alloc>
-std::vector<T> DataCsrMap<T, Alloc>::MaxElemsCols() {
-  std::vector<T> max_elems(size_cols_, std::numeric_limits<T>::min());
+std::vector<T, Alloc> DataCsrMap<T, Alloc>::MaxElemsCols() {
+  VectorValue max_elems(size_cols_, std::numeric_limits<T>::min());
   std::vector<std::mutex> mtxv(size_cols_);
 
   // Gets all lines
@@ -583,8 +583,8 @@ std::vector<T> DataCsrMap<T, Alloc>::MaxElemsCols() {
 
 template<typename T, typename Alloc>
 template<class Func>
-std::vector<T> DataCsrMap<T, Alloc>::ReduceCols(Func&& fn) {
-  std::vector<T> rets(size_cols_);
+std::vector<T, Alloc> DataCsrMap<T, Alloc>::ReduceCols(Func&& fn) {
+  VectorValue rets(size_cols_);
   std::vector<std::mutex> mtxv(size_cols_);
 
   // Gets all elements
@@ -607,8 +607,8 @@ std::vector<T> DataCsrMap<T, Alloc>::ReduceCols(Func&& fn) {
 
 template<typename T, typename Alloc>
 template<class Func>
-std::vector<T> DataCsrMap<T, Alloc>::ReduceRows(Func&& fn) {
-  std::vector<T> rets(size_rows_);
+std::vector<T, Alloc> DataCsrMap<T, Alloc>::ReduceRows(Func&& fn) {
+  VectorValue rets(size_rows_);
 
   // Gets all elements
   Range<ConstLineIter> range(rows_.begin(), rows_.end());
@@ -629,7 +629,7 @@ std::vector<T> DataCsrMap<T, Alloc>::ReduceRows(Func&& fn) {
 
 template<typename T, typename Alloc>
 template<class Func>
-std::vector<T> DataCsrMap<T, Alloc>::Reduce(Axis axis, Func&& fn) {
+std::vector<T, Alloc> DataCsrMap<T, Alloc>::Reduce(Axis axis, Func&& fn) {
   if (axis == Axis::ROW) {
     return std::move(ReduceRows(fn));
   } else {
@@ -639,7 +639,7 @@ std::vector<T> DataCsrMap<T, Alloc>::Reduce(Axis axis, Func&& fn) {
 
 template<typename T, typename Alloc>
 template<class Func>
-std::vector<T> DataCsrMap<T, Alloc>::MapCols(Func&& fn) {
+std::vector<T, Alloc> DataCsrMap<T, Alloc>::MapCols(Func&& fn) {
   // Gets all lines
   Range<LineIter> range(rows_.begin(), rows_.end());
 
@@ -660,7 +660,7 @@ std::vector<T> DataCsrMap<T, Alloc>::MapCols(Func&& fn) {
 
 template<typename T, typename Alloc>
 template<class Func>
-std::vector<T> DataCsrMap<T, Alloc>::MapRows(Func&& fn) {
+std::vector<T, Alloc> DataCsrMap<T, Alloc>::MapRows(Func&& fn) {
   // Gets all lines
   Range<LineIter> range(rows_.begin(), rows_.end());
 
@@ -679,7 +679,7 @@ std::vector<T> DataCsrMap<T, Alloc>::MapRows(Func&& fn) {
 
 template<typename T, typename Alloc>
 template<class Func>
-std::vector<T> DataCsrMap<T, Alloc>::Map(Axis axis, Func&& fn) {
+std::vector<T, Alloc> DataCsrMap<T, Alloc>::Map(Axis axis, Func&& fn) {
   if (axis == Axis::ROW) {
     MapRows(fn);
   } else {

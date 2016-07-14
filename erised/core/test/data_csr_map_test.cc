@@ -65,7 +65,7 @@ TYPED_TEST_P(DataRatingTest, MinMaxSingle) {
 
 TYPED_TEST_P(DataRatingTest, MinMaxVec) {
   // Rows
-  auto v = this->mat_.MinElemsRows();
+  auto&& v = this->mat_.MinElemsRows();
 //   std::vector<float> vtest = {0.22, 0.8, 1.4, 0.7, 0.4, 0.7, 0.7, 0.7, 0.7};
 
   std::vector<float> vtest = {0.44, 0.8, 0.22, 0.22, 0.2, 0.1};
