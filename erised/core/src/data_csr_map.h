@@ -90,7 +90,19 @@ class DataCsrMap: public DataBase<T> {
   VectorValue Reduce(Axis axis, Func&& fn);
 
   template<class Func>
-  VectorValue Map(Axis axis, Func&& fn);
+  void Map(Axis axis, Func&& fn);
+
+  template<class Func>
+  void MapCols(Func&& fn);
+
+  template<class Func>
+  void MapRows(Func&& fn);
+
+  template<class Func>
+  VectorValue ReduceCols(Func&& fn);
+
+  template<class Func>
+  VectorValue ReduceRows(Func&& fn);
 
   // This is the reduction function used for calculates similarities
   // because on similarities is able to calculates two terms in only
@@ -102,23 +114,17 @@ class DataCsrMap: public DataBase<T> {
   template<class Func, size_t N>
   std::array<T,N> Reduce(Axis axis, size_t i1, size_t i2, Func&& fn);
 
+  template<class Func, size_t N>
+  std::array<T,N> ReduceRows(size_t i1, size_t i2, Func&& fn);
+
+  template<class Func, size_t N>
+  std::array<T,N> ReduceCols(size_t i1, size_t i2, Func&& fn);
+
   template<typename U, typename _Alloc>
   friend std::ostream& operator<<(std::ostream& stream,
                                   const DataCsrMap<U, _Alloc>& mat);
 
  private:
-  template<class Func>
-  VectorValue ReduceCols(Func&& fn);
-
-  template<class Func>
-  VectorValue ReduceRows(Func&& fn);
-
-  template<class Func>
-  VectorValue MapCols(Func&& fn);
-
-  template<class Func>
-  VectorValue MapRows(Func&& fn);
-
   T MinElemRow(size_t i);
 
   T MinElemCol(size_t i);
@@ -126,12 +132,6 @@ class DataCsrMap: public DataBase<T> {
   T MaxElemRow(size_t i);
 
   T MaxElemCol(size_t i);
-
-  template<class Func, size_t N>
-  std::array<T,N> ReduceRows(size_t i1, size_t i2, Func&& fn);
-
-  template<class Func, size_t N>
-  std::array<T,N> ReduceCols(size_t i1, size_t i2, Func&& fn);
 
   VecMap rows_;
 

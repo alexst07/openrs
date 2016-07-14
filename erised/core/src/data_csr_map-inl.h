@@ -174,14 +174,13 @@ template<typename T, typename Alloc>
 std::vector<size_t, Alloc> DataCsrMap<T, Alloc>::NumElementsLines() const {
   VectorSize rets(size_rows_);
   // Gets all lines
-  Range<LineIter> range(rows_.begin(), rows_.end());
+  Range<ConstLineIter> range(rows_.begin(), rows_.end());
 
   // Executes the function fn on all elments
-  return parallel_for(range, [&]( const Range<LineIter>& r) {
+  parallel_for(range, [&](const Range<ConstLineIter>& r) {
     // Scan only one line, because unordered_map::iterator doesn't
-    // have any to use compare operator as > or < so, TBB parallel
-    // doesn't work correct for unordered_map, and this work arount
-    // is used to guarantee the correct compilation
+    // have overload to compare operator as > or <, so, TBB parallel
+    // doesn't work correct for unordered_map
     for(auto i = r.begin(); i!=r.end(); ++i) {
       auto dist = std::distance(rows_.begin(), i);
       rets[dist] = i->size();
@@ -484,16 +483,21 @@ std::vector<T, Alloc> DataCsrMap<T, Alloc>::MinElemsRows() {
   VectorValue min_elems(size_rows_);
 
   // Gets all lines
-  Range<LineIter> range(rows_.begin(), rows_.end());
+  Range<ConstLineIter> range(rows_.begin(), rows_.end());
 
   // Gets all min elements at time
-  parallel_for(range, [&](const Range<LineIter>& r) {
+  parallel_for(range, [&](const Range<ConstLineIter>& r) {
     // Scan each line
     for(auto i = r.begin(); i!=r.end(); ++i) {
-        auto dist = std::distance(rows_.begin(), i);
+      // The distance from the line being scanned and the
+      // begin of the vector is used to calculate the
+      // element of the vector where will be set the
+      // the minimum element
+      auto dist = std::distance(rows_.cbegin(), i);
 
-        // Gets the minimum element on row
-        min_elems[dist] = MinElemRow(dist);
+      // Gets the minimum element on row, and assigns this
+      // to vector at dist
+      min_elems[dist] = MinElemRow(dist);
     }
   });
 
@@ -508,17 +512,19 @@ std::vector<T, Alloc> DataCsrMap<T, Alloc>::MinElemsCols() {
   // Gets all lines
   Range<ConstLineIter> range(rows_.begin(), rows_.end());
 
-  // Iterates over a column, and count the elements
   parallel_for(range, [&](const Range<ConstLineIter>& r){
     // Scan each line and search for specific column
-    for (const auto &row : r) {
+    for (auto it = r.begin(); it!=r.end(); ++it) {
+      // For each possible map element
       for (size_t i = 0; i < size_cols_; i++) {
-        auto e = row.find(i);
+        auto e = it->find(i);
 
         // Verify if column exists
-        if (e != row.end()) {
-          auto dist = std::distance(rows_.begin(), row);
+        if (e != it->end()) {
+          // Each column has a different mutex
           mtxv[e->first].lock();
+
+          // Compare to fine the minimum element from col
           if (e->second < min_elems[e->first]) {
             min_elems[e->first] = e->second;
           }
@@ -542,8 +548,12 @@ std::vector<T, Alloc> DataCsrMap<T, Alloc>::MaxElemsRows() {
   parallel_for(range, [&](const Range<ConstLineIter>& r) {
     // Scan each line
     for(auto i = r.begin(); i!=r.end(); ++i) {
-        auto dist = std::distance(rows_.begin(), i);
-        min_elems[dist] = MaxElemRow(dist);
+      // The distance from the line being scanned and the
+      // begin of the vector is used to calculate the
+      // element of the vector where will be set the
+      // the max element
+      auto dist = std::distance(rows_.cbegin(), i);
+      min_elems[dist] = MaxElemRow(dist);
     }
   });
 
@@ -559,16 +569,17 @@ std::vector<T, Alloc> DataCsrMap<T, Alloc>::MaxElemsCols() {
   Range<ConstLineIter> range(rows_.begin(), rows_.end());
 
   // Iterates over a column, and count the elements
-  parallel_for(range, [&](const Range<ConstLineIter>& r){
+  parallel_for(range, [&](const Range<ConstLineIter>& r) {
     // Scan each line and search for specific column
-    for (const auto &row : r) {
+    for (auto it = r.begin(); it!=r.end(); ++it) {
       for (size_t i = 0; i < size_cols_; i++) {
-        auto e = row.find(i);
+        auto e = it->find(i);
 
         // Verify if column exists
-        if (e != row.end()) {
-          auto dist = std::distance(rows_.begin(), row);
+        if (e != it->end()) {
           mtxv[e->first].lock();
+
+          // Compare to fine the max element from col
           if (e->second > max_elems[e->first]) {
             max_elems[e->first] = e->second;
           }
@@ -619,7 +630,7 @@ std::vector<T, Alloc> DataCsrMap<T, Alloc>::ReduceRows(Func&& fn) {
     for(auto i = r.begin(); i!=r.end(); ++i)
       // Scan element by element from the line
       for(const auto& e: *i) {
-        auto dist = std::distance(rows_.begin(), r);
+        auto dist = std::distance(rows_.begin(), i);
         rets[i] = fn(dist, e.second, rets[i]);
       }
   });
@@ -639,7 +650,7 @@ std::vector<T, Alloc> DataCsrMap<T, Alloc>::Reduce(Axis axis, Func&& fn) {
 
 template<typename T, typename Alloc>
 template<class Func>
-std::vector<T, Alloc> DataCsrMap<T, Alloc>::MapCols(Func&& fn) {
+void DataCsrMap<T, Alloc>::MapCols(Func&& fn) {
   // Gets all lines
   Range<LineIter> range(rows_.begin(), rows_.end());
 
@@ -660,7 +671,7 @@ std::vector<T, Alloc> DataCsrMap<T, Alloc>::MapCols(Func&& fn) {
 
 template<typename T, typename Alloc>
 template<class Func>
-std::vector<T, Alloc> DataCsrMap<T, Alloc>::MapRows(Func&& fn) {
+void DataCsrMap<T, Alloc>::MapRows(Func&& fn) {
   // Gets all lines
   Range<LineIter> range(rows_.begin(), rows_.end());
 
@@ -673,13 +684,13 @@ std::vector<T, Alloc> DataCsrMap<T, Alloc>::MapRows(Func&& fn) {
     for(auto i = r.begin(); i!=r.end(); ++i)
       // Scan element by element from the line
       for(const auto& e: *i)
-        i->operator[](e.first) = fn(std::distance(rows_.begin(), r), e.second);
+        i->operator[](e.first) = fn(std::distance(rows_.begin(), i), e.second);
   });
 }
 
 template<typename T, typename Alloc>
 template<class Func>
-std::vector<T, Alloc> DataCsrMap<T, Alloc>::Map(Axis axis, Func&& fn) {
+void DataCsrMap<T, Alloc>::Map(Axis axis, Func&& fn) {
   if (axis == Axis::ROW) {
     MapRows(fn);
   } else {
