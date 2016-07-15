@@ -195,6 +195,34 @@ TYPED_TEST_P(DataRatingTest, MapCols) {
   ASSERT_FLOAT_EQ(1.8, v);
 }
 
+TYPED_TEST_P(DataRatingTest, ReduceRows) {
+  typedef decltype(this->mat_) TYPE;
+
+  TYPE mat1 = this->mat_;
+  std::vector<float> vtest = {1.24, 3.9, 1.32, 2.32, 1.3, 1.02};
+
+  auto vec = mat1.ReduceRows([](int i, float v1, float v2) -> float {
+    return v1 + v2;
+  });
+
+  for (int i = 0; i < vtest.size(); i++)
+    ASSERT_FLOAT_EQ(vec[i], vtest[i]);
+}
+
+TYPED_TEST_P(DataRatingTest, ReduceCols) {
+  typedef decltype(this->mat_) TYPE;
+
+//   TYPE mat1 = this->mat_;
+//   std::vector<float> vtest = {1.24, 3.9, 1.32, 2.32, 1.3, 1.02};
+//
+//   auto vec = mat1.ReduceCols([](int i, float v1, float v2) -> float {
+//     return v1 + v2;
+//   });
+//
+//   for (int i = 0; i < vec.size(); i++)
+//     std::cout << vec[i] << " ";
+}
+
 REGISTER_TYPED_TEST_CASE_P(DataRatingTest,
                            Access,
                            MinMaxSingle,
@@ -203,7 +231,9 @@ REGISTER_TYPED_TEST_CASE_P(DataRatingTest,
                            NumElements,
                            AssignMove,
                            MapRows,
-                           MapCols
+                           MapCols,
+                           ReduceRows,
+                           ReduceCols
                           );
 
 typedef ::testing::Types<erised::DataCsrMap<float>> Types;
