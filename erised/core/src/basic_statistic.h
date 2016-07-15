@@ -16,7 +16,7 @@ T Avarage(const Data<T, Alloc>& data, size_t i, Axis axis, size_t num_elems) {
 
   if (axis == Axis::ROW) {
     // Sum all valid elements from row i
-    sum = data.RowReduce(i, [](float a, float b) {
+    sum = data.RowReduce(i, [](size_t /*i*/, float a, float b) {
       return a + b;
     });
   } else {

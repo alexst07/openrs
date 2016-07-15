@@ -39,23 +39,9 @@ class MatBase {
   static constexpr size_t order = N;
 
   using value_type = T;
-  using MapFn = std::function<T(T)>;
-  using ReduceFn = std::function<T(T,T)>;
 
   MatBase() = default;
   virtual ~MatBase() = default;
-
-  virtual void Map(const MapFn& fn) = 0;
-
-  virtual void RowMap(size_t i, MapFn fn) = 0;
-
-  virtual void ColMap(size_t i, MapFn fn) = 0;
-
-  virtual T Reduce(const ReduceFn& fn) const = 0;
-
-  virtual T RowReduce(size_t i, const ReduceFn& fn) const = 0;
-
-  virtual T ColReduce(size_t i, const ReduceFn& fn) const = 0;
 
   virtual T operator()(const Pos<order>& pos) const = 0;
 

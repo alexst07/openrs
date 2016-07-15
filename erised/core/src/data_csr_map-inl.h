@@ -240,7 +240,8 @@ std::vector<size_t, Alloc>  DataCsrMap<T, Alloc>::NumElementsCols() const {
 }
 
 template<typename T, typename Alloc>
-void DataCsrMap<T, Alloc>::ColMap(size_t i, MapFn fn) {
+template<class Func>
+void DataCsrMap<T, Alloc>::ColMap(size_t i, Func&& fn) {
   // Gets all lines
   Range<LineIter> range(rows_.begin(), rows_.end());
 
@@ -258,7 +259,8 @@ void DataCsrMap<T, Alloc>::ColMap(size_t i, MapFn fn) {
 }
 
 template<typename T, typename Alloc>
-T DataCsrMap<T, Alloc>::ColReduce(size_t i, const ReduceFn& fn) const {
+template<class Func>
+T DataCsrMap<T, Alloc>::ColReduce(size_t i, Func&& fn) const {
   // Gets all lines
   Range<ConstLineIter> range(rows_.begin(), rows_.end());
 
@@ -284,7 +286,8 @@ T DataCsrMap<T, Alloc>::ColReduce(size_t i, const ReduceFn& fn) const {
 }
 
 template<typename T, typename Alloc>
-void DataCsrMap<T, Alloc>::Map(const MapFn& fn) {
+template<class Func>
+void DataCsrMap<T, Alloc>::Map(Func&& fn) {
   // Gets all elements
   Range<LineIter> range(rows_.begin(), rows_.end());
 
@@ -299,7 +302,8 @@ void DataCsrMap<T, Alloc>::Map(const MapFn& fn) {
 }
 
 template<typename T, typename Alloc>
-T DataCsrMap<T, Alloc>::Reduce(const ReduceFn& fn) const {
+template<class Func>
+T DataCsrMap<T, Alloc>::Reduce(Func&& fn) const {
   // Gets all elements
   Range<ConstLineIter> range(rows_.begin(), rows_.end());
 
@@ -320,7 +324,8 @@ T DataCsrMap<T, Alloc>::Reduce(const ReduceFn& fn) const {
 }
 
 template<typename T, typename Alloc>
-void DataCsrMap<T, Alloc>::RowMap(size_t i, MapFn fn) {
+template<class Func>
+void DataCsrMap<T, Alloc>::RowMap(size_t i, Func&& fn) {
   auto row_ref = rows_.begin() + i;
   // Gets all elements from line row_ref
   Range<LineIter> range(row_ref, row_ref + 1);
@@ -339,25 +344,19 @@ void DataCsrMap<T, Alloc>::RowMap(size_t i, MapFn fn) {
 }
 
 template<typename T, typename Alloc>
-T DataCsrMap<T, Alloc>::RowReduce(size_t i, const ReduceFn& fn) const {
-  auto row_ref = rows_.begin() + i;
-  // Gets all elements from line row_ref
-  Range<ConstLineIter> range(row_ref, row_ref + 1);
+template<class Func>
+T DataCsrMap<T, Alloc>::RowReduce(size_t i, Func&& fn) const {
+  // unordered_map doesn't have overload comprator for iterator, so it's
+  // not possible to use it with tbb range
 
-  // Executes the function fn on all elments
-  parallel_reduce(range, static_cast<T>(0),
-      [&](const Range<ConstLineIter>& r, T value) -> T {
-        T ret = value;
-        // Scan each line
-        for(auto i = r.begin(); i!=r.end(); ++i)
-          // Scan element by element from the line
-          for(const auto& e: *i)
-            ret = fn(e.second, ret);
+  auto row = rows_[i];
+  T ret = static_cast<T>(0);
 
-          return ret;
-  }, [&fn](T a, T b) -> T {
-    return fn(a, b);
-  });
+  for(auto const& e: row) {
+    ret = fn(i, e.second, ret);
+  }
+
+  return ret;
 }
 
 template<typename T, typename Alloc>
@@ -622,17 +621,14 @@ std::vector<T, Alloc> DataCsrMap<T, Alloc>::ReduceRows(Func&& fn) {
   VectorValue rets(size_rows_);
 
   // Gets all elements
-  Range<ConstLineIter> range(rows_.begin(), rows_.end());
+  Range<size_t> range(0, size_rows_);
 
   // Executes the function fn on all elments
-  parallel_for(range, [&](const Range<ConstLineIter>& r) {
+  parallel_for(range, [&](const Range<size_t>& r) {
     // Scan each line
     for(auto i = r.begin(); i!=r.end(); ++i)
       // Scan element by element from the line
-      for(const auto& e: *i) {
-        auto dist = std::distance(rows_.begin(), i);
-        rets[i] = fn(dist, e.second, rets[i]);
-      }
+      rets[i] = RowReduce(i, fn);
   });
 
   return std::move(rets);
@@ -739,7 +735,7 @@ std::array<T,N> DataCsrMap<T, Alloc>::ReduceCols(size_t i1, size_t i2,
   Range<ConstLineIter> range(rows_.begin(), rows_.end());
 
   // Executes the function fn on all elments
-  parallel_reduce(range, static_cast<T>(0),
+  return parallel_reduce(range, static_cast<T>(0),
       [&](const Range<ConstLineIter>& r, std::array<T,N> value) -> T {
         std::array<T,N> rets = value;
         // Scan each line

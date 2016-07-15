@@ -44,17 +44,23 @@ class DataCsrMap: public DataBase<T> {
   DataCsrMap<T, Alloc>& operator=(const DataCsrMap<T, Alloc>& m);
   DataCsrMap<T, Alloc>& operator=(DataCsrMap<T, Alloc>&& m);
 
-  void Map(const MapFn& fn) override;
+  template<class Func>
+  void Map(Func&& fn);
 
-  void RowMap(size_t i, MapFn fn) override;
+  template<class Func>
+  void RowMap(size_t i, Func&& fn);
 
-  void ColMap(size_t i, MapFn fn) override;
+  template<class Func>
+  void ColMap(size_t i, Func&& fn);
 
-  T Reduce(const ReduceFn& fn) const override;
+  template<class Func>
+  T Reduce(Func&& fn) const;
 
-  T RowReduce(size_t i, const ReduceFn& fn) const override;
+  template<class Func>
+  T RowReduce(size_t i, Func&& fn) const;
 
-  T ColReduce(size_t i, const ReduceFn& fn) const override;
+  template<class Func>
+  T ColReduce(size_t i, Func&& fn) const;
 
   T operator()(const Pos<DataBase<T>::order>& pos) const override;
 

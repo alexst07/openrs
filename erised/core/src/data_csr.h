@@ -31,17 +31,17 @@ class DataCsr: public DataBase<T> {
   DataCsr<T>& operator=(const DataCsr<T>& m);
   DataCsr<T>& operator=(DataCsr<T>&& m);
 
-  void Map(const MapFn& fn) override;
+  void Map(const MapFn& fn);
 
-  void RowMap(size_t i, MapFn fn) override;
+  void RowMap(size_t i, MapFn fn);
 
-  void ColMap(size_t i, MapFn fn) override;
+  void ColMap(size_t i, MapFn fn);
 
-  T Reduce(const ReduceFn& fn) const override;
+  T Reduce(const ReduceFn& fn) const;
 
-  T RowReduce(size_t i, const ReduceFn& fn) const override;
+  T RowReduce(size_t i, const ReduceFn& fn) const;
 
-  T ColReduce(size_t i, const ReduceFn& fn) const override;
+  T ColReduce(size_t i, const ReduceFn& fn) const;
 
   T operator()(const Pos<DataBase<T>::order>& pos) const override {};
 
