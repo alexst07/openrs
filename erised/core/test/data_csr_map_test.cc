@@ -212,15 +212,15 @@ TYPED_TEST_P(DataRatingTest, ReduceRows) {
 TYPED_TEST_P(DataRatingTest, ReduceCols) {
   typedef decltype(this->mat_) TYPE;
 
-//   TYPE mat1 = this->mat_;
-//   std::vector<float> vtest = {1.24, 3.9, 1.32, 2.32, 1.3, 1.02};
-//
-//   auto vec = mat1.ReduceCols([](int i, float v1, float v2) -> float {
-//     return v1 + v2;
-//   });
-//
-//   for (int i = 0; i < vec.size(); i++)
-//     std::cout << vec[i] << " ";
+  TYPE mat1 = this->mat_;
+  std::vector<float> vtest = {1.1, 1.6, 1.4, 0.9, 1.2, 0.7, 2.7, 0.8, 0.7};
+
+  auto vec = mat1.ReduceCols([](size_t i, float v1, float v2) -> float {
+    return v1 + v2;
+  });
+
+  for (int i = 0; i < vec.size(); i++)
+    ASSERT_FLOAT_EQ(vec[i], vtest[i]);
 }
 
 REGISTER_TYPED_TEST_CASE_P(DataRatingTest,

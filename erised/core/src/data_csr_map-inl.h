@@ -275,13 +275,13 @@ T DataCsrMap<T, Alloc>::ColReduce(size_t i, Func&& fn) const {
 
           // Verify if column exists
           if (got != row->end()) {
-            ret = fn(got->second, ret);
+            ret = fn(i, got->second, ret);
           }
         }
 
         return ret;
-  }, [&fn](T a, T b) -> T {
-    return fn(a, b);
+  }, [](T a, T b) -> T {
+    return a + b;
   });
 }
 
@@ -595,21 +595,13 @@ template<typename T, typename Alloc>
 template<class Func>
 std::vector<T, Alloc> DataCsrMap<T, Alloc>::ReduceCols(Func&& fn) {
   VectorValue rets(size_cols_);
-  std::vector<std::mutex> mtxv(size_cols_);
-
-  // Gets all elements
-  Range<ConstLineIter> range(rows_.begin(), rows_.end());
+  Range<size_t> range(0, size_cols_);
 
   // Executes the function fn on all elments
-  parallel_for(range, [&](const Range<ConstLineIter>& r) {
+  parallel_for(range, [&](const Range<size_t>& r) {
     // Scan each line
     for(auto i = r.begin(); i!=r.end(); ++i)
-      // Scan element by element from the line
-      for(const auto& e: *i) {
-        mtxv[e.first].lock();
-        rets[e.first] = fn(e.first, e.second, rets[i]);
-        mtxv[e.first].unlock();
-      }
+      rets[i] = ColReduce(i, fn);
   });
 
   return std::move(rets);
