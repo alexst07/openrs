@@ -70,6 +70,8 @@ class DataCsrMap: public DataBase<T> {
 
   size_t NumElementsCol(size_t i) const override;
 
+  VectorSize NumElements(Axis axis) const;
+
   VectorSize NumElementsLines() const;
 
   VectorSize NumElementsCols() const;

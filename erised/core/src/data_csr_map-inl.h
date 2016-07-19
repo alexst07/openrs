@@ -171,6 +171,14 @@ size_t DataCsrMap<T, Alloc>::NumElementsLine(size_t i) const {
 }
 
 template<typename T, typename Alloc>
+std::vector<size_t> DataCsrMap<T, Alloc>::NumElements(Axis axis) const {
+  if (axis == Axis::ROW)
+    return std::move(NumElementsLines());
+
+  return std::move(NumElementsCols());
+}
+
+template<typename T, typename Alloc>
 std::vector<size_t> DataCsrMap<T, Alloc>::NumElementsLines() const {
   VectorSize rets(size_rows_);
   // Gets all lines
