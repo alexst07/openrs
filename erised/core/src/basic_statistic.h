@@ -142,20 +142,22 @@ template<class T, class Alloc, template<typename, typename> class Data>
 std::vector<T> Variance(const Data<T, Alloc>& data, Axis axis,
                         const std::vector<size_t>& n) {
   using vec_it = typename std::vector<T>::iterator;
-  std::vector<T> u = Avarage(data, axis, n);
-  std::vector<T> x2;
-  std::vector<T> res(n.size(), 0);
+  auto u = Avarage(data, axis, n);
+  std::vector<T, Alloc> res(n.size(), 0);
 
-  x2 = data.RowReduce(axis, [](size_t, T a, T b) -> T {
-    return a*a + b;
+  auto x2 = data.Reduce(axis, [&u](size_t i, T a, T b) -> T {
+    T term = a - u[i];
+    return term*term + b;
   });
+
+  auto num_elems = data.NumElements(axis);
 
   Range<vec_it> range(res.begin(), res.end());
   parallel_for(range, [&](const Range<vec_it>& r) {
     // Scan each line
     for(auto i = r.begin(); i!=r.end(); ++i) {
       auto dist = std::distance(res.begin(), i);
-      T den = static_cast<T>(n[dist]) - u[dist]*u[dist];
+      T den = num_elems[dist];
 
       if (den == 0)
         ERISED_Error(Error::DIVIDE_BY_ZERO, "Divide by zero exception");
