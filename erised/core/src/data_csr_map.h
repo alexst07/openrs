@@ -16,15 +16,13 @@ template<typename T, typename Alloc = std::allocator<T>>
 class DataCsrMap: public DataBase<T> {
  public:
   using size_type = std::size_t;
-  using MapFn = std::function<T(T)>;
-  using ReduceFn = std::function<T(T,T)>;
-  using VecMap = typename std::vector<std::unordered_map<size_type, T>>;
+  using VecMap = typename std::vector<std::unordered_map<size_type, T>, Alloc>;
   using LineIter = typename VecMap::iterator;
   using ConstLineIter = typename VecMap::const_iterator;
   using ColIter = typename std::unordered_map<size_type, T>::iterator;
   using ConstColIter = typename std::unordered_map<size_type, T>::iterator;
   using VectorValue = typename std::vector<T, Alloc>;
-  using VectorSize = typename std::vector<size_t, Alloc>;
+  using VectorSize = std::vector<size_t>;
   typedef Alloc allocator_type;
   typedef T value_type;
 
@@ -76,24 +74,24 @@ class DataCsrMap: public DataBase<T> {
 
   VectorSize NumElementsCols() const;
 
-  T Min(size_t i, Axis axis);
+  T Min(size_t i, Axis axis) const;
 
-  T Max(size_t i, Axis axis);
+  T Max(size_t i, Axis axis) const;
 
-  T Min(Axis axis);
+  T Min(Axis axis) const;
 
-  T Max(Axis axis);
+  T Max(Axis axis) const;
 
-  VectorValue MinElemsRows();
+  VectorValue MinElemsRows() const;
 
-  VectorValue MinElemsCols();
+  VectorValue MinElemsCols() const;
 
-  VectorValue MaxElemsRows();
+  VectorValue MaxElemsRows() const;
 
-  VectorValue MaxElemsCols();
+  VectorValue MaxElemsCols() const;
 
   template<class Func>
-  VectorValue Reduce(Axis axis, Func&& fn);
+  VectorValue Reduce(Axis axis, Func&& fn) const;
 
   template<class Func>
   void Map(Axis axis, Func&& fn);
@@ -105,39 +103,32 @@ class DataCsrMap: public DataBase<T> {
   void MapRows(Func&& fn);
 
   template<class Func>
-  VectorValue ReduceCols(Func&& fn);
+  VectorValue ReduceCols(Func&& fn) const;
 
   template<class Func>
-  VectorValue ReduceRows(Func&& fn);
-
-  // This is the reduction function used for calculates similarities
-  // because on similarities is able to calculates two terms in only
-  // one interation, but to improve perfomance is better calculates
-  // the reduction for all lines or collumns in each iteration
-  template<class Func, size_t N>
-  std::vector<std::array<T,N>> Reduce(Axis axis, Func&& fn, Func&& fnm);
+  VectorValue ReduceRows(Func&& fn) const;
 
   template<class Func, size_t N>
-  std::array<T,N> Reduce(Axis axis, size_t i1, size_t i2, Func&& fn);
+  std::array<T,N> Reduce(Axis axis, size_t i1, size_t i2, Func&& fn) const;
 
   template<class Func, size_t N = 2>
-  std::array<T,N> ReduceRows(size_t i1, size_t i2, Func&& fn);
+  std::array<T,N> ReduceRows(size_t i1, size_t i2, Func&& fn) const;
 
   template<class Func, size_t N = 2>
-  std::array<T,N> ReduceCols(size_t i1, size_t i2, Func&& fn);
+  std::array<T,N> ReduceCols(size_t i1, size_t i2, Func&& fn) const;
 
   template<typename U, typename _Alloc>
   friend std::ostream& operator<<(std::ostream& stream,
                                   const DataCsrMap<U, _Alloc>& mat);
 
  private:
-  T MinElemRow(size_t i);
+  T MinElemRow(size_t i) const;
 
-  T MinElemCol(size_t i);
+  T MinElemCol(size_t i) const;
 
-  T MaxElemRow(size_t i);
+  T MaxElemRow(size_t i) const;
 
-  T MaxElemCol(size_t i);
+  T MaxElemCol(size_t i) const;
 
   VecMap rows_;
 

@@ -171,7 +171,7 @@ size_t DataCsrMap<T, Alloc>::NumElementsLine(size_t i) const {
 }
 
 template<typename T, typename Alloc>
-std::vector<size_t, Alloc> DataCsrMap<T, Alloc>::NumElementsLines() const {
+std::vector<size_t> DataCsrMap<T, Alloc>::NumElementsLines() const {
   VectorSize rets(size_rows_);
   // Gets all lines
   Range<ConstLineIter> range(rows_.begin(), rows_.end());
@@ -186,7 +186,8 @@ std::vector<size_t, Alloc> DataCsrMap<T, Alloc>::NumElementsLines() const {
       rets[dist] = i->size();
     }
   });
-  return rets;
+
+  return std::move(rets);
 }
 
 template<typename T, typename Alloc>
@@ -212,7 +213,7 @@ size_t DataCsrMap<T, Alloc>::NumElementsCol(size_t i) const {
 }
 
 template<typename T, typename Alloc>
-std::vector<size_t, Alloc>  DataCsrMap<T, Alloc>::NumElementsCols() const {
+std::vector<size_t>  DataCsrMap<T, Alloc>::NumElementsCols() const {
   VectorSize num_elems(size_cols_);
   std::vector<std::mutex> mtxv(size_cols_);
 
@@ -236,7 +237,7 @@ std::vector<size_t, Alloc>  DataCsrMap<T, Alloc>::NumElementsCols() const {
     }
   });
 
-  return num_elems;
+  return std::move(num_elems);
 }
 
 template<typename T, typename Alloc>
@@ -360,7 +361,7 @@ T DataCsrMap<T, Alloc>::RowReduce(size_t i, Func&& fn) const {
 }
 
 template<typename T, typename Alloc>
-T DataCsrMap<T, Alloc>::Min(size_t i, Axis axis) {
+T DataCsrMap<T, Alloc>::Min(size_t i, Axis axis) const {
   if (axis == Axis::ROW) {
     return MinElemRow(i);
   } else {
@@ -369,7 +370,7 @@ T DataCsrMap<T, Alloc>::Min(size_t i, Axis axis) {
 }
 
 template<typename T, typename Alloc>
-T DataCsrMap<T, Alloc>::MinElemRow(size_t i) {
+T DataCsrMap<T, Alloc>::MinElemRow(size_t i) const {
   if (i > size_rows_)
     ERISED_Error(Error::OUT_OF_RANGE, "value is greater or equal than %d",
                  size_rows_ - 1);
@@ -392,7 +393,7 @@ T DataCsrMap<T, Alloc>::MinElemRow(size_t i) {
 }
 
 template<typename T, typename Alloc>
-T DataCsrMap<T, Alloc>::MinElemCol(size_t i) {
+T DataCsrMap<T, Alloc>::MinElemCol(size_t i) const {
   if (i > size_cols_)
     ERISED_Error(Error::OUT_OF_RANGE, "value is greater or equal than %d",
                  size_cols_ - 1);
@@ -423,7 +424,7 @@ T DataCsrMap<T, Alloc>::MinElemCol(size_t i) {
 }
 
 template<typename T, typename Alloc>
-T DataCsrMap<T, Alloc>::Max(size_t i, Axis axis) {
+T DataCsrMap<T, Alloc>::Max(size_t i, Axis axis) const {
   if (axis == Axis::ROW) {
     return MaxElemRow(i);
   } else {
@@ -432,7 +433,7 @@ T DataCsrMap<T, Alloc>::Max(size_t i, Axis axis) {
 }
 
 template<typename T, typename Alloc>
-T DataCsrMap<T, Alloc>::MaxElemRow(size_t i) {
+T DataCsrMap<T, Alloc>::MaxElemRow(size_t i) const {
   T max = std::numeric_limits<T>::min();
 
   // Gets the map pointed by the row_ref
@@ -451,7 +452,7 @@ T DataCsrMap<T, Alloc>::MaxElemRow(size_t i) {
 }
 
 template<typename T, typename Alloc>
-T DataCsrMap<T, Alloc>::MaxElemCol(size_t i) {
+T DataCsrMap<T, Alloc>::MaxElemCol(size_t i) const {
   std::atomic<T> max(std::numeric_limits<T>::min());
 
   // Gets all lines
@@ -478,7 +479,7 @@ T DataCsrMap<T, Alloc>::MaxElemCol(size_t i) {
 }
 
 template<typename T, typename Alloc>
-std::vector<T, Alloc> DataCsrMap<T, Alloc>::MinElemsRows() {
+std::vector<T, Alloc> DataCsrMap<T, Alloc>::MinElemsRows() const {
   VectorValue min_elems(size_rows_);
 
   // Gets all lines
@@ -504,7 +505,7 @@ std::vector<T, Alloc> DataCsrMap<T, Alloc>::MinElemsRows() {
 }
 
 template<typename T, typename Alloc>
-std::vector<T, Alloc> DataCsrMap<T, Alloc>::MinElemsCols() {
+std::vector<T, Alloc> DataCsrMap<T, Alloc>::MinElemsCols() const {
   VectorValue min_elems(size_cols_, std::numeric_limits<T>::max());
   std::vector<std::mutex> mtxv(size_cols_);
 
@@ -537,7 +538,7 @@ std::vector<T, Alloc> DataCsrMap<T, Alloc>::MinElemsCols() {
 }
 
 template<typename T, typename Alloc>
-std::vector<T, Alloc> DataCsrMap<T, Alloc>::MaxElemsRows() {
+std::vector<T, Alloc> DataCsrMap<T, Alloc>::MaxElemsRows() const {
   VectorValue min_elems(size_rows_);
 
   // Gets all elements
@@ -560,7 +561,7 @@ std::vector<T, Alloc> DataCsrMap<T, Alloc>::MaxElemsRows() {
 }
 
 template<typename T, typename Alloc>
-std::vector<T, Alloc> DataCsrMap<T, Alloc>::MaxElemsCols() {
+std::vector<T, Alloc> DataCsrMap<T, Alloc>::MaxElemsCols() const {
   VectorValue max_elems(size_cols_, std::numeric_limits<T>::min());
   std::vector<std::mutex> mtxv(size_cols_);
 
@@ -593,7 +594,7 @@ std::vector<T, Alloc> DataCsrMap<T, Alloc>::MaxElemsCols() {
 
 template<typename T, typename Alloc>
 template<class Func>
-std::vector<T, Alloc> DataCsrMap<T, Alloc>::ReduceCols(Func&& fn) {
+std::vector<T, Alloc> DataCsrMap<T, Alloc>::ReduceCols(Func&& fn) const {
   VectorValue rets(size_cols_);
   Range<size_t> range(0, size_cols_);
 
@@ -609,7 +610,7 @@ std::vector<T, Alloc> DataCsrMap<T, Alloc>::ReduceCols(Func&& fn) {
 
 template<typename T, typename Alloc>
 template<class Func>
-std::vector<T, Alloc> DataCsrMap<T, Alloc>::ReduceRows(Func&& fn) {
+std::vector<T, Alloc> DataCsrMap<T, Alloc>::ReduceRows(Func&& fn) const {
   VectorValue rets(size_rows_);
 
   // Gets all elements
@@ -628,7 +629,7 @@ std::vector<T, Alloc> DataCsrMap<T, Alloc>::ReduceRows(Func&& fn) {
 
 template<typename T, typename Alloc>
 template<class Func>
-std::vector<T, Alloc> DataCsrMap<T, Alloc>::Reduce(Axis axis, Func&& fn) {
+std::vector<T, Alloc> DataCsrMap<T, Alloc>::Reduce(Axis axis, Func&& fn) const {
   if (axis == Axis::ROW) {
     return std::move(ReduceRows(fn));
   } else {
@@ -689,7 +690,7 @@ void DataCsrMap<T, Alloc>::Map(Axis axis, Func&& fn) {
 template<typename T, typename Alloc>
 template<class Func, size_t N>
 typename std::array<T,N> DataCsrMap<T, Alloc>::ReduceRows(size_t i1, size_t i2,
-                                                          Func&& fn) {
+                                                          Func&& fn) const {
   Range<size_t> range(0, size_cols_);
   typename std::array<T,N> zarray{};
 
@@ -697,7 +698,7 @@ typename std::array<T,N> DataCsrMap<T, Alloc>::ReduceRows(size_t i1, size_t i2,
   auto row2 = rows_.at(i2);
 
   // Executes the function fn on all elments
-  return parallel_reduce(range, zarray,
+  auto ret_arr = parallel_reduce(range, zarray,
       [&](const Range<size_t>& r, typename std::array<T,N> value) {
         typename std::array<T,N> rets(std::move(value));
 
@@ -720,19 +721,21 @@ typename std::array<T,N> DataCsrMap<T, Alloc>::ReduceRows(size_t i1, size_t i2,
     }
     return std::move(acc);
   });
+
+  return std::move(ret_arr);
 }
 
 template<typename T, typename Alloc>
 template<class Func, size_t N>
 typename std::array<T,N> DataCsrMap<T, Alloc>::ReduceCols(size_t i1, size_t i2,
-                                                          Func&& fn) {
+                                                          Func&& fn) const {
   typename std::array<T,N> zarray{};
 
   // Gets all elements from line row_ref
   Range<ConstLineIter> range(rows_.begin(), rows_.end());
 
   // Executes the function fn on all elments
-  return parallel_reduce(range, zarray,
+  auto ret_arr = parallel_reduce(range, zarray,
       [&](const Range<ConstLineIter>& r, typename std::array<T,N> value) {
         typename std::array<T,N> rets(std::move(value));
         // Scan each line
@@ -756,12 +759,14 @@ typename std::array<T,N> DataCsrMap<T, Alloc>::ReduceCols(size_t i1, size_t i2,
     }
     return std::move(acc);
   });
+
+  return std::move(ret_arr);
 }
 
 template<typename T, typename Alloc>
 template<class Func, size_t N>
 std::array<T,N> DataCsrMap<T, Alloc>::Reduce(Axis axis, size_t i1, size_t i2,
-                                             Func&& fn) {
+                                             Func&& fn) const {
   if (axis == Axis::ROW) {
     ReduceRows(i1, i2, fn);
   } else {
