@@ -6,6 +6,7 @@
 
 #include "data_base.h"
 #include "parallel.h"
+#include "exception.h"
 
 namespace erised {
 
@@ -26,7 +27,7 @@ T Avarage(const Data<T, Alloc>& data, size_t i, Axis axis, size_t num_elems) {
   }
 
   if (num_elems == 0)
-    throw std::overflow_error("Divide by zero exception");
+    ERISED_Error(Error::DIVIDE_BY_ZERO, "Divide by zero exception");
 
   // Make the cast from size_t to T, T MUST be a typename
   // where this kind of conversion is possible
@@ -47,8 +48,8 @@ std::vector<T, Alloc> Avarage(const Data<T, Alloc>& data, Axis axis,
   size_t num_elems_size = num_elems.size();
 
   if (sums_size != num_elems_size)
-    throw std::invalid_argument("size of number of elements vector is not "
-                                "equal axis number");
+    ERISED_Error(Error::INVALID_ARGUMENT, "size of number of elements vector "
+                 "is not equal axis number");
 
   Range<vec_it> range(avgs.begin(), avgs.end());
 
@@ -143,7 +144,7 @@ std::vector<T> Variance(const Data<T, Alloc>& data, Axis axis,
   using vec_it = typename std::vector<T>::iterator;
   std::vector<T> u = Avarage(data, axis, n);
   std::vector<T> x2;
-  std::vector<T> res(n, 0);
+  std::vector<T> res(n.size(), 0);
 
   x2 = data.RowReduce(axis, [](size_t, T a, T b) -> T {
     return a*a + b;
@@ -155,8 +156,10 @@ std::vector<T> Variance(const Data<T, Alloc>& data, Axis axis,
     for(auto i = r.begin(); i!=r.end(); ++i) {
       auto dist = std::distance(res.begin(), i);
       T den = static_cast<T>(n[dist]) - u[dist]*u[dist];
+
       if (den == 0)
-        throw std::overflow_error("Divide by zero exception");
+        ERISED_Error(Error::DIVIDE_BY_ZERO, "Divide by zero exception");
+
       *i = x2[dist]/ den;
     }
   });
@@ -238,7 +241,7 @@ void Rescaling(Data<T>* data, size_t i, Axis axis, size_t n) {
 
   T den = max - min;
   if (den == 0)
-    throw std::overflow_error("Divide by zero exception");
+    ERISED_Error(Error::DIVIDE_BY_ZERO, "Divide by zero exception");
 
   if (axis == Axis::ROW) {
     data->RowMap(i, [den, min, max](T x) -> T { return (x - min)/den; });
@@ -262,7 +265,7 @@ void Rescaling(Data<T>* data, Axis axis, const std::vector<size_t>& n) {
       auto dist = std::distance(dens.begin(), i);
       *i = maxs[dist] - mins[dist];
       if (*i == 0)
-        throw std::overflow_error("Divide by zero exception");
+        ERISED_Error(Error::DIVIDE_BY_ZERO, "Divide by zero exception");
     }
   });
 

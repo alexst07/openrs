@@ -9,7 +9,8 @@ namespace erised {
 enum class Error {
   INVALID_ARGUMENT,
   OUT_OF_RANGE,
-  BAD_ALLOC
+  BAD_ALLOC,
+  DIVIDE_BY_ZERO
 };
 
 template <typename Enumeration>
