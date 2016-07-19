@@ -15,7 +15,6 @@ class DataRatingTest : public ::testing::Test {
                   {0.22, 0,   0,   0,   0,   0.7, 0.7, 0.7, 0  },
                   {0,    0,   0,   0.2, 0.4, 0,   0,   0,   0.7},
                   {0.22, 0,   0,   0,   0.4, 0,   0.3, 0.1, 0  }};
-
   }
 
   void TearDown() {
@@ -223,6 +222,58 @@ TYPED_TEST_P(DataRatingTest, ReduceCols) {
     ASSERT_FLOAT_EQ(vec[i], vtest[i]);
 }
 
+TYPED_TEST_P(DataRatingTest, ReduceRowsPair) {
+  typedef decltype(this->mat_) TYPE;
+
+  TYPE mat1 = this->mat_;
+
+  auto l = [](float v1, float v2, std::array<float,2> ret) {
+    std::array<float,2> r;
+    r[0] = v1*v2;
+    r[1] = 2*v1*v2;
+
+    r[0] += ret[0];
+    r[1] += ret[1];
+    return r;
+  };
+
+  auto vec = mat1.ReduceRows(3, 5, l);
+
+  ASSERT_FLOAT_EQ(vec[0], 0.3284);
+  ASSERT_FLOAT_EQ(vec[1], 0.6568);
+
+  vec = mat1.ReduceRows(1, 2, l);
+
+  ASSERT_FLOAT_EQ(vec[0], 0);
+  ASSERT_FLOAT_EQ(vec[1], 0);
+}
+
+TYPED_TEST_P(DataRatingTest, ReduceColsPair) {
+  typedef decltype(this->mat_) TYPE;
+
+  TYPE mat1 = this->mat_;
+
+  auto l = [](float v1, float v2, std::array<float,2> ret) {
+    std::array<float,2> r;
+    r[0] = v1*v2;
+    r[1] = 2*v1*v2;
+
+    r[0] += ret[0];
+    r[1] += ret[1];
+    return r;
+  };
+
+  auto vec = mat1.ReduceCols(3, 5, l);
+
+  ASSERT_FLOAT_EQ(vec[0], 0);
+  ASSERT_FLOAT_EQ(vec[1], 0);
+
+  vec = mat1.ReduceCols(1, 2, l);
+
+  ASSERT_FLOAT_EQ(vec[0], 1.12);
+  ASSERT_FLOAT_EQ(vec[1], 2.24);
+}
+
 REGISTER_TYPED_TEST_CASE_P(DataRatingTest,
                            Access,
                            MinMaxSingle,
@@ -233,7 +284,9 @@ REGISTER_TYPED_TEST_CASE_P(DataRatingTest,
                            MapRows,
                            MapCols,
                            ReduceRows,
-                           ReduceCols
+                           ReduceCols,
+                           ReduceRowsPair,
+                           ReduceColsPair
                           );
 
 typedef ::testing::Types<erised::DataCsrMap<float>> Types;

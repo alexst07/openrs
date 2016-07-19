@@ -688,65 +688,73 @@ void DataCsrMap<T, Alloc>::Map(Axis axis, Func&& fn) {
 
 template<typename T, typename Alloc>
 template<class Func, size_t N>
-std::array<T,N> DataCsrMap<T, Alloc>::ReduceRows(size_t i1, size_t i2,
-                                                 Func&& fn) {
+typename std::array<T,N> DataCsrMap<T, Alloc>::ReduceRows(size_t i1, size_t i2,
+                                                          Func&& fn) {
   Range<size_t> range(0, size_cols_);
+  typename std::array<T,N> zarray{};
 
   auto row1 = rows_.at(i1);
   auto row2 = rows_.at(i2);
 
   // Executes the function fn on all elments
-  parallel_reduce(range, static_cast<T>(0),
-      [&](const Range<size_t>& r, std::array<T,N> value) -> T {
-        std::array<T,N> rets = value;
+  return parallel_reduce(range, zarray,
+      [&](const Range<size_t>& r, typename std::array<T,N> value) {
+        typename std::array<T,N> rets(std::move(value));
+
         // Scan each line
         for(auto i = r.begin(); i!=r.end(); ++i) {
-          auto it1 = row1->find(i);
-          auto it2 = row2->find(i);
+          auto it1 = row1.find(i);
+          auto it2 = row2.find(i);
 
           // Verify if column exists
-          if ((it1 != it1->end()) && (it2 != it2->end()))
+          if ((it1 != row1.end()) && (it2 != row2.end())) {
             rets = fn(it1->second, it2->second, rets);
+          }
         }
 
-        return rets;
-  }, [](std::array<T,N> a, std::array<T,N> b) -> T {
-    std::array<T,N> acc;
+        return std::move(rets);
+  }, [](typename std::array<T,N> a, typename std::array<T,N> b) {
+    typename std::array<T,N> acc;
     for (int i = 0; i < N; i++) {
       acc[i] = a[i] + b[i];
     }
-    return acc;
+    return std::move(acc);
   });
 }
 
 template<typename T, typename Alloc>
 template<class Func, size_t N>
-std::array<T,N> DataCsrMap<T, Alloc>::ReduceCols(size_t i1, size_t i2,
-                                                 Func&& fn) {
+typename std::array<T,N> DataCsrMap<T, Alloc>::ReduceCols(size_t i1, size_t i2,
+                                                          Func&& fn) {
+  typename std::array<T,N> zarray{};
+
   // Gets all elements from line row_ref
   Range<ConstLineIter> range(rows_.begin(), rows_.end());
 
   // Executes the function fn on all elments
-  return parallel_reduce(range, static_cast<T>(0),
-      [&](const Range<ConstLineIter>& r, std::array<T,N> value) -> T {
-        std::array<T,N> rets = value;
+  return parallel_reduce(range, zarray,
+      [&](const Range<ConstLineIter>& r, typename std::array<T,N> value) {
+        typename std::array<T,N> rets(std::move(value));
         // Scan each line
-        for(auto i = r.begin(); i!=r.end(); ++i) {
-          auto e1 = r->find(i1);
-          auto e2 = r->find(i2);
+        for(auto it = r.begin(); it != r.end(); ++it) {
+          // 'it' is an iterator for line with the map
+          auto e1 = it->find(i1);
+          auto e2 = it->find(i2);
 
-           // Verify if column exists
-          if ((e1 != e1->end()) && (e2 != e2->end()))
+          // Verify if column exists
+          // 'it' is the map
+          // e1 and e2 is an iterator for map
+          if ((e1 != it->end()) && (e2 != it->end()))
             rets = fn(e1->second, e2->second, rets);
         }
 
-          return rets;
-  }, [](std::array<T,N> a, std::array<T,N> b) -> T {
-    std::array<T,N> acc;
+        return std::move(rets);
+  }, [](typename std::array<T,N> a, typename std::array<T,N> b) {
+    typename std::array<T,N> acc;
     for (int i = 0; i < N; i++) {
       acc[i] = a[i] + b[i];
     }
-    return acc;
+    return std::move(acc);
   });
 }
 

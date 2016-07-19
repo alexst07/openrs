@@ -120,10 +120,10 @@ class DataCsrMap: public DataBase<T> {
   template<class Func, size_t N>
   std::array<T,N> Reduce(Axis axis, size_t i1, size_t i2, Func&& fn);
 
-  template<class Func, size_t N>
+  template<class Func, size_t N = 2>
   std::array<T,N> ReduceRows(size_t i1, size_t i2, Func&& fn);
 
-  template<class Func, size_t N>
+  template<class Func, size_t N = 2>
   std::array<T,N> ReduceCols(size_t i1, size_t i2, Func&& fn);
 
   template<typename U, typename _Alloc>
