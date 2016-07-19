@@ -8,7 +8,6 @@
 #include "parallel.h"
 
 namespace erised {
-namespace internal {
 
 template<class T, class Alloc, template<typename, typename> class Data>
 T Avarage(const Data<T, Alloc>& data, size_t i, Axis axis, size_t num_elems) {
@@ -34,15 +33,13 @@ T Avarage(const Data<T, Alloc>& data, size_t i, Axis axis, size_t num_elems) {
   return sum/ static_cast<T>(num_elems);
 }
 
-}
+template<class T, class Alloc, template<typename, typename> class Data>
+std::vector<T, Alloc> Avarage(const Data<T, Alloc>& data, Axis axis,
+                              const std::vector<size_t>& num_elems) {
+  using vec_it = typename Data<T, Alloc>::VectorValue::iterator;
 
-template<class T, template<typename> class Data>
-std::vector<T> Avarage(const Data<T>& data, Axis axis,
-                       const std::vector<size_t>& num_elems) {
-  using vec_it = typename std::vector<T>::iterator;
-
-  std::vector<T> avarages(num_elems, 0);
-  std::vector<T> sums = data.Reduce(axis, [](size_t /*i*/, T a, T b) -> T {
+  std::vector<T, Alloc> avgs(num_elems.size(), 0);
+  auto sums = data.Reduce(axis, [](size_t /*i*/, T a, T b) -> T {
     return a + b;
   });
 
@@ -53,43 +50,35 @@ std::vector<T> Avarage(const Data<T>& data, Axis axis,
     throw std::invalid_argument("size of number of elements vector is not "
                                 "equal axis number");
 
-  Range<vec_it> range(avarages.begin(), avarages.end());
+  Range<vec_it> range(avgs.begin(), avgs.end());
 
   parallel_for(range, [&](const Range<vec_it>& r) {
     // Scan each line
     for(auto i = r.begin(); i!=r.end(); ++i) {
-      auto dist = std::distance(avarages.begin(), i);
-      if (num_elems[dist] == 0)
-        throw std::overflow_error("Divide by zero exception");
-      *i = sums[dist]/ static_cast<T>(num_elems[dist]);
+      auto dist = std::distance(avgs.begin(), i);
+      if (num_elems[dist] != 0)
+        *i = sums[dist]/ static_cast<T>(num_elems[dist]);
     }
   });
 
-  return std::move(avarages);
+  return std::move(avgs);
 }
 
-template<class T, template<typename> class Data>
-std::vector<T> Avarage(const Data<T>& data, Axis axis) {
-  size_t num_elems = 0;
+template<class T, class Alloc, template<typename, typename> class Data>
+std::vector<T, Alloc> Avarage(const Data<T, Alloc>& data, Axis axis) {
+  std::vector<size_t> num_elems;
 
   if (axis == Axis::ROW) {
     // Count the number of elements on row i
-    num_elems = data.NumElementsLine();
+    num_elems = data.NumElementsLines();
   } else {
     // Count the number of elements on col i
-    num_elems = data.NumElementsCol();
+    num_elems = data.NumElementsCols();
   }
 
-  std::vector<T> sums = data.Reduce(axis, [](float a, float b) {
-    return a + b;
-  });
+  typename Data<T, Alloc>::VectorValue avgs = Avarage(data, axis, num_elems);
 
-  if (num_elems == 0)
-    throw std::overflow_error("Divide by zero exception");
-
-  // Make the cast from size_t to T, T MUST be a typename
-  // where this kind of conversion is possible
-  return sums/ static_cast<T>(num_elems);
+  return std::move(avgs);
 }
 
 template<class T, class Alloc, template<typename, typename> class Data>
@@ -104,7 +93,7 @@ T Avarage(const Data<T, Alloc>& data, size_t i, Axis axis) {
     num_elems = data.NumElementsCol(i);
   }
 
-  return internal::Avarage(data, i, axis, num_elems);
+  return Avarage(data, i, axis, num_elems);
 }
 
 template<class T, class Alloc, template<typename, typename> class Data>
@@ -119,7 +108,7 @@ T Variance(const Data<T, Alloc>& data, size_t i, Axis axis) {
     n = data.NumElementsCol(i);
   }
 
-  T u = internal::Avarage(data, i, axis, n);
+  T u = Avarage(data, i, axis, n);
 
   T x2 = data.Reduce([](float a, float b) {
     return a*a + b;
@@ -131,7 +120,7 @@ T Variance(const Data<T, Alloc>& data, size_t i, Axis axis) {
 
 template<class T, class Alloc, template<typename, typename> class Data>
 T Variance(const Data<T, Alloc>& data, size_t i, Axis axis, size_t n) {
-  T u = internal::Avarage(data, i, axis, n);
+  T u = Avarage(data, i, axis, n);
   T x2;
 
   if (axis == Axis::ROW) {

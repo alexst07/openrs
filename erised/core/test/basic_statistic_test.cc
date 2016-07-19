@@ -1,31 +1,51 @@
-#include "data_base.h"
-#include "data_csr_map.h"
-#include "basic_statistic.h"
-
 #include <gtest/gtest.h>
 #include <iostream>
 
-TEST(Sample, Sampleunit) {
-  using namespace erised;
+#include "basic_statistic.h"
+#include "data_csr_map.h"
 
-  DataCsrMap<float> data{{0.44, 0.8, 0,   0,   0,   0,   0,   0,   0  },
-                         {0,    0.8, 1.4, 0,   0,   0,   0,   0,   0  },
-                         {0.22, 0,   0,   0.7, 0.4, 0,   0,   0,   0  },
-                         {0.22, 0,   0,   0,   0,   0.7, 0.7, 0.7, 0  },
-                         {0,    0,   0,   0,   0.4, 0,   0,   0,   0.7},
-                         {0.22, 0,   0,   0,   0.4, 0,   0,   0,   0  }};
+template <class Data>
+class DataRatingTest : public ::testing::Test {
+ public:
+  Data mat_;
 
-  float res_l = Avarage(data, 2, Axis::ROW);
-  float res_c = Avarage(data, 0, Axis::COL);
+  void SetUp() {
+      mat_ = Data{{0.44, 0.8, 0,   0,   0,   0,   0,   0,   0  },
+                  {0,    0.8, 1.4, 0,   0,   0,   1.7, 0,   0  },
+                  {0.22, 0,   0,   0.7, 0.4, 0,   0,   0,   0  },
+                  {0.22, 0,   0,   0,   0,   0.7, 0.7, 0.7, 0  },
+                  {0,    0,   0,   0.2, 0.4, 0,   0,   0,   0.7},
+                  {0.22, 0,   0,   0,   0.4, 0,   0.3, 0.1, 0  }};
+  }
 
-  std::cout << "Avarage row 2: " << res_l << "\n"
-            << "Avarage col 0: " << res_c << "\n";
+  void TearDown() {
 
-  float var_r = Variance(data, 2, Axis::ROW);
-  float var_c = Variance(data, 0, Axis::COL);
-  std::cout << "Variance row 2: " << var_r << "\n"
-            << "Variance col 0: " << var_c << "\n";
+  }
+
+};
+
+TYPED_TEST_CASE_P(DataRatingTest);
+
+TYPED_TEST_P(DataRatingTest, Avarage) {
+  auto vec_rows = erised::Avarage(this->mat_, erised::Axis::ROW);
+  std::vector<float> vtest_rows = {0.62, 1.3, 0.44, 0.58, 0.43333337, 0.255};
+
+  for (int i = 0; i < vec_rows.size(); i++)
+    ASSERT_FLOAT_EQ(vec_rows[i], vtest_rows[i]);
+
+  auto vec_cols = erised::Avarage(this->mat_, erised::Axis::COL);
+  std::vector<float> vtest_cols = {0.275, 0.8, 1.4, 0.45, 0.4, 0.7, 0.9, 0.4, 0.7};
+
+  for (int i = 0; i < vec_rows.size(); i++)
+    ASSERT_FLOAT_EQ(vec_cols[i], vtest_cols[i]);
 }
+
+REGISTER_TYPED_TEST_CASE_P(DataRatingTest,
+                           Avarage
+                          );
+
+typedef ::testing::Types<erised::DataCsrMap<float>> Types;
+INSTANTIATE_TYPED_TEST_CASE_P(My, DataRatingTest, Types);
 
 int main(int argc, char **argv) {
   ::testing::InitGoogleTest(&argc, argv);
