@@ -184,10 +184,10 @@ T StandardDeviation(const Data<T, Alloc>& data, size_t i, Axis axis, size_t n) {
 template<class T, class Alloc, template<typename, typename> class Data>
 std::vector<T> StandardDeviation(const Data<T, Alloc>& data, Axis axis,
                                  const std::vector<size_t>& n) {
-  using vec_it = typename std::vector<T>::iterator;
+  using vec_it = typename Data<T, Alloc>::VectorValue::iterator;
 
-  std::vector<T> variance = Variance(data, axis, n);
-  std::vector<T> res(n.size());
+  std::vector<T, Alloc> variance = Variance(data, axis, n);
+  std::vector<T, Alloc> res(n.size());
 
   Range<vec_it> range(res.begin(), res.end());
   parallel_for(range, [&](const Range<vec_it>& r) {

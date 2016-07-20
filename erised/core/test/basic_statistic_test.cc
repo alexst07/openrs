@@ -56,9 +56,26 @@ TYPED_TEST_P(BasicStatisticTest, Variance) {
     ASSERT_FLOAT_EQ(vec_cols[i], vtest_cols[i]);
 }
 
+TYPED_TEST_P(BasicStatisticTest, StandardDeviation) {
+  auto num_elems_rows = this->mat_.NumElementsLines();
+  auto vec_rows = erised::StandardDeviation(this->mat_, erised::Axis::ROW, num_elems_rows);
+  std::vector<float> vtest_rows = {0.18, 0.37416574, 0.19799, 0.207846, 0.20548, 0.109886};
+
+  for (int i = 0; i < vec_rows.size(); i++)
+    ASSERT_NEAR(vec_rows[i], vtest_rows[i], 0.01);
+
+  auto num_elems_cols = this->mat_.NumElementsCols();
+  auto vec_cols = erised::StandardDeviation(this->mat_, erised::Axis::COL, num_elems_cols);
+  std::vector<float> vtest_cols = {0.0952628, 0, 0, 0.25, 0, 0, 0.588784, 0.3, 0};;
+
+  for (int i = 0; i < vec_cols.size(); i++)
+    ASSERT_NEAR(vec_cols[i], vtest_cols[i], 0.01);
+}
+
 REGISTER_TYPED_TEST_CASE_P(BasicStatisticTest,
                            Avarage,
-                           Variance
+                           Variance,
+                           StandardDeviation
                           );
 
 typedef ::testing::Types<erised::DataCsrMap<float>> Types;
