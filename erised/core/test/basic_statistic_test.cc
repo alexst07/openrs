@@ -1,5 +1,6 @@
 #include <gtest/gtest.h>
 #include <iostream>
+#include <cmath>
 
 #include "basic_statistic.h"
 #include "data_csr_map.h"
@@ -72,10 +73,66 @@ TYPED_TEST_P(BasicStatisticTest, StandardDeviation) {
     ASSERT_NEAR(vec_cols[i], vtest_cols[i], 0.01);
 }
 
+TYPED_TEST_P(BasicStatisticTest, StandardizationRows) {
+  auto mat2 = this->mat_;
+
+  auto num_elems_rows = this->mat_.NumElementsLines();
+  erised::Standardization(&mat2, erised::Axis::ROW, num_elems_rows);
+
+  auto v = mat2({0,0});
+  ASSERT_FLOAT_EQ(-1, v);
+
+  v = mat2({0,1});
+  ASSERT_FLOAT_EQ(1, v);
+
+  v = mat2({2,0});
+  ASSERT_NEAR(-1.111167, v, 0.01);
+
+  v = mat2({5,4});
+  ASSERT_NEAR(1.31954935115, v, 0.01);
+}
+
+TYPED_TEST_P(BasicStatisticTest, StandardizationCols) {
+  auto mat2 = this->mat_;
+
+  auto num_elems_cols = this->mat_.NumElementsCols();
+  erised::Standardization(&mat2, erised::Axis::COL, num_elems_cols);
+
+  auto v = mat2({0,0});
+  ASSERT_NEAR(1.73205070605, v, 0.01);
+
+  v = mat2({1,6});
+  ASSERT_NEAR(1.35873257425, v, 0.01);
+}
+
+TYPED_TEST_P(BasicStatisticTest, RescalingRows) {
+  auto mat2 = this->mat_;
+
+  auto num_elems_rows = this->mat_.NumElementsLines();
+  erised::Rescaling(&mat2, erised::Axis::ROW, num_elems_rows);
+
+  std::cout << mat2;
+
+//   auto v = mat2({0,0});
+//   ASSERT_FLOAT_EQ(-1, v);
+//
+//   v = mat2({0,1});
+//   ASSERT_FLOAT_EQ(1, v);
+//
+//   v = mat2({2,0});
+//   ASSERT_NEAR(-1.111167, v, 0.01);
+//
+//   v = mat2({5,4});
+//   ASSERT_NEAR(1.31954935115, v, 0.01);
+}
+
 REGISTER_TYPED_TEST_CASE_P(BasicStatisticTest,
                            Avarage,
                            Variance,
-                           StandardDeviation
+                           StandardDeviation,
+                           StandardizationRows,
+                           StandardizationCols,
+                           RescalingRows
                           );
 
 typedef ::testing::Types<erised::DataCsrMap<float>> Types;
