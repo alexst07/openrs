@@ -152,6 +152,10 @@ std::vector<T> Variance(const Data<T, Alloc>& data, Axis axis,
 
   auto num_elems = data.NumElements(axis);
 
+  if (num_elems.size() != n.size())
+    ERISED_Error(Error::OUT_OF_RANGE, "Numbers of elements on axis is "
+                                      "different from vector n");
+
   Range<vec_it> range(res.begin(), res.end());
   parallel_for(range, [&](const Range<vec_it>& r) {
     // Scan each line
@@ -215,10 +219,10 @@ void Standardization(Data<T, Alloc>* data, size_t i, Axis axis, size_t n) {
 
 template<class T, class Alloc, template<typename, typename> class Data>
 void Standardization(Data<T, Alloc>* data, Axis axis, const std::vector<size_t>& n) {
-  std::vector<T> u = Avarage(*data, axis, n);
-  std::vector<T> a = StandardDeviation(*data, axis, n);
+  auto u = Avarage(*data, axis, n);
+  auto a = StandardDeviation(*data, axis, n);
 
-  data->Map(axis, [&u, &a](size_t i, T x) -> T { return (x - u[i])/a[a]; });
+  data->Map(axis, [&u, &a](size_t i, T x) -> T { return (x - u[i])/a[i]; });
 }
 
 template<class T, class Alloc, template<typename, typename> class Data>
@@ -236,8 +240,8 @@ void Standardization(Data<T, Alloc>* data, size_t i, Axis axis) {
   Standardization(data, i, axis, n);
 }
 
-template<class T, template<typename> class Data>
-void Rescaling(Data<T>* data, size_t i, Axis axis, size_t n) {
+template<class T, class Alloc, template<typename, typename> class Data>
+void Rescaling(Data<T, Alloc>* data, size_t i, Axis axis, size_t n) {
   T min = data->Min(i, axis);
   T max = data->Max(i, axis);
 
@@ -252,13 +256,13 @@ void Rescaling(Data<T>* data, size_t i, Axis axis, size_t n) {
   }
 }
 
-template<class T, template<typename> class Data>
-void Rescaling(Data<T>* data, Axis axis, const std::vector<size_t>& n) {
-  using vec_it = typename std::vector<T>::iterator;
+template<class T, class Alloc, template<typename, typename> class Data>
+void Rescaling(Data<T, Alloc>* data, Axis axis, const std::vector<size_t>& n) {
+  using vec_it = typename Data<T, Alloc>::VectorValue::iterator;
 
-  std::vector<T> mins = data->Min(axis);
-  std::vector<T> maxs = data->Max(axis);
-  std::vector<T> dens(n.size());
+  auto mins = data->Min(axis);
+  auto maxs = data->Max(axis);
+  typename Data<T, Alloc>::VectorValue dens(n.size());
 
   Range<vec_it> range(dens.begin(), dens.end());
   parallel_for(range, [&](const Range<vec_it>& r) {
