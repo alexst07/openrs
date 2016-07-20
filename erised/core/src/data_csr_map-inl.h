@@ -111,7 +111,7 @@ DataCsrMap<T, Alloc>& DataCsrMap<T, Alloc>::operator=(
 template<typename U, typename _Alloc>
 std::ostream& operator<<(std::ostream& stream,
                          const DataCsrMap<U, _Alloc>& mat) {
-  stream << "rows vector: ";
+  stream << "rows vector: \n";
   for (const auto& r: mat.rows_) {
     for (const auto& m: r) {
       stream << m.first << " : " << m.second << '\n';
@@ -374,6 +374,24 @@ T DataCsrMap<T, Alloc>::Min(size_t i, Axis axis) const {
     return MinElemRow(i);
   } else {
     return MinElemCol(i);
+  }
+}
+
+template<typename T, typename Alloc>
+std::vector<T, Alloc> DataCsrMap<T, Alloc>::Min(Axis axis) const {
+  if (axis == Axis::ROW) {
+    return std::move(MinElemsRows());
+  } else {
+    return std::move(MinElemsCols());
+  }
+}
+
+template<typename T, typename Alloc>
+std::vector<T, Alloc> DataCsrMap<T, Alloc>::Max(Axis axis) const {
+  if (axis == Axis::ROW) {
+    return std::move(MaxElemsRows());
+  } else {
+    return std::move(MaxElemsCols());
   }
 }
 

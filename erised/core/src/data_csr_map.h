@@ -80,9 +80,9 @@ class DataCsrMap: public DataBase<T> {
 
   T Max(size_t i, Axis axis) const;
 
-  T Min(Axis axis) const;
+  VectorValue Min(Axis axis) const;
 
-  T Max(Axis axis) const;
+  VectorValue Max(Axis axis) const;
 
   VectorValue MinElemsRows() const;
 
