@@ -111,19 +111,43 @@ TYPED_TEST_P(BasicStatisticTest, RescalingRows) {
   auto num_elems_rows = this->mat_.NumElementsLines();
   erised::Rescaling(&mat2, erised::Axis::ROW, num_elems_rows);
 
-  std::cout << mat2;
+  auto v = mat2({0,0});
+  ASSERT_FLOAT_EQ(0, v);
 
-//   auto v = mat2({0,0});
-//   ASSERT_FLOAT_EQ(-1, v);
-//
-//   v = mat2({0,1});
-//   ASSERT_FLOAT_EQ(1, v);
-//
-//   v = mat2({2,0});
-//   ASSERT_NEAR(-1.111167, v, 0.01);
-//
-//   v = mat2({5,4});
-//   ASSERT_NEAR(1.31954935115, v, 0.01);
+  v = mat2({0,1});
+  ASSERT_FLOAT_EQ(1, v);
+
+  v = mat2({2,4});
+  ASSERT_NEAR(0.375, v, 0.01);
+
+  v = mat2({5,6});
+  ASSERT_NEAR(0.666666, v, 0.01);
+}
+
+TYPED_TEST_P(BasicStatisticTest, RescalingCols) {
+  typedef decltype(this->mat_) TYPE;
+
+  TYPE mat = {{0.44, 0.8, 0,   0,   0,   0,   0,   0,   0  },
+              {0,    0.8, 1.4, 0,   0,   0.2, 1.7, 0,   0  },
+              {0.22, 0,   0,   0.7, 0.4, 0,   0,   0,   0.4},
+              {0.22, 0.2, 1.2, 0,   0,   0.7, 0.7, 0.7, 0  },
+              {0,    0,   0,   0.2, 0.3, 0,   0,   0,   0.7},
+              {0.22, 0,   0,   0,   0.4, 0,   0.3, 0.1, 0  }};
+
+  auto num_elems_cols = mat.NumElementsCols();
+  erised::Rescaling(&mat, erised::Axis::COL, num_elems_cols);
+
+  auto v = mat({0,0});
+  ASSERT_FLOAT_EQ(1, v);
+
+  v = mat({2,3});
+  ASSERT_FLOAT_EQ(1, v);
+
+  v = mat({1,6});
+  ASSERT_NEAR(1, v, 0.01);
+
+  v = mat({3,6});
+  ASSERT_NEAR(0.285, v, 0.01);
 }
 
 REGISTER_TYPED_TEST_CASE_P(BasicStatisticTest,
@@ -132,7 +156,8 @@ REGISTER_TYPED_TEST_CASE_P(BasicStatisticTest,
                            StandardDeviation,
                            StandardizationRows,
                            StandardizationCols,
-                           RescalingRows
+                           RescalingRows,
+                           RescalingCols
                           );
 
 typedef ::testing::Types<erised::DataCsrMap<float>> Types;
