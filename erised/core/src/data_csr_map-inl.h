@@ -805,9 +805,9 @@ template<size_t N, class Func>
 std::array<T,N> DataCsrMap<T, Alloc>::Reduce(Axis axis, size_t i1, size_t i2,
                                              Func&& fn) const {
   if (axis == Axis::ROW) {
-    ReduceRows(i1, i2, fn);
+    return std::move(ReduceRows<N>(i1, i2, fn));
   } else {
-    ReduceCols(i1, i2, fn);
+    return std::move(ReduceCols<N>(i1, i2, fn));
   }
 }
 
