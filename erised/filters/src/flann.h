@@ -35,7 +35,7 @@ class SimMatRef {
   size_t step_;
 };
 
-template<class T>
+template<class T, class Alloc = std::allocator<T>>
 class SimMat {
  public:
   static constexpr bool continuous = true;
@@ -43,22 +43,20 @@ class SimMat {
   using iterator = typename std::vector<T>::iterator;
   using const_iterator = typename std::vector<T>::const_iterator;
 
-  inline SimMat(): rows_(0), cols_(0), delete_(false) {}
+  inline SimMat(): size_(0), delete_(false) {}
 
-  inline SimMat(size_t rows, size_t cols)
-    : rows_(rows)
-    , cols_(cols)
+  inline SimMat(size_t size)
+    : size_(size)
     , delete_(true)
-    ,mat_(new T[rows_*cols_], rows_, cols_) {}
+    ,mat_(new T[size_*size_], size, size) {}
 
-  inline SimMat(T* data, size_t rows, size_t cols)
-    : rows_(rows), cols_(cols), delete_(false), mat_(data, rows_, cols_) {}
+  inline SimMat(T* data, size_t size)
+    : size_(size), delete_(false), mat_(data, size, size) {}
 
-  inline SimMat(const std::vector<T>& v, size_t rows, size_t cols)
-    : rows_(rows)
-    , cols_(cols)
+  inline SimMat(const std::vector<T>& v, size_t size)
+    : size_(size)
     , delete_(false)
-    , mat_(const_cast<T*>(v.data()), rows_, cols_) {}
+    , mat_(const_cast<T*>(v.data()), size, size) {}
 
   inline ~SimMat() {
     if (delete_)
@@ -66,11 +64,11 @@ class SimMat {
   }
 
   inline T& operator()(size_t x, size_t y) {
-    return mat_[cols_*x + y];
+    return mat_[size_*x + y];
   }
 
   inline const T& operator()(size_t x, size_t y) const {
-    return mat_[cols_*x + y];
+    return mat_[size_*x + y];
   }
 
   inline const T* Data() const noexcept {
@@ -82,33 +80,31 @@ class SimMat {
   }
 
   inline size_t Capacity() const noexcept {
-    return rows_ * cols_;
+    return size_;
   }
 
-  inline size_t Rows() const noexcept {
-    return rows_;
-  }
+  inline size_t SetCapacity() const noexcept {
+    if (delete_)
+      delete mat_.ptr();
 
-  inline size_t Cols() const noexcept {
-    return cols_;
+
   }
 
   inline ::flann::Matrix<T>& FlannMat() noexcept {
     return mat_;
   }
 
-  template<typename U>
-  friend std::ostream& operator<<(std::ostream& stream, const SimMat<U>& mat);
+  template<typename U, typename UAlloc>
+  friend std::ostream& operator<<(std::ostream& stream, const SimMat<U, UAlloc>& mat);
 
  private:
-  size_t rows_;
-  size_t cols_;
+  size_t size_;
   bool delete_;
   ::flann::Matrix<T> mat_;
 };
 
-template<typename U>
-std::ostream& operator<<(std::ostream& stream, const SimMat<U>& mat) {
+template<typename U, typename UAlloc>
+std::ostream& operator<<(std::ostream& stream, const SimMat<U, UAlloc>& mat) {
   for (int i = 0; i < mat.rows_*mat.cols_; i++) {
     stream << mat.mat_.ptr()[i] << " ";
 
