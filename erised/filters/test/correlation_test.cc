@@ -33,8 +33,9 @@ TYPED_TEST_P(CorrelationTest, AdjustedCosine) {
       erised::flann::SimMat<float>> adcos(erised::Axis::COL);
 
   erised::DataCsrMap<float> mat1 = this->mat_;
+  std::cout << mat1;
 
-  auto arr = adcos.SimTerms(mat1, 0, 4, 3.2, 3.25);
+  auto arr = adcos.SimTerms(mat1, 0, 1, 4, 2.4);
 
   float res = arr[0]/(sqrt(arr[1])*sqrt(arr[2]));
   std::cout << res;

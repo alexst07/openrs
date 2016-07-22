@@ -37,8 +37,8 @@ class AdjustedCosine: public Correlation<Data, Sim> {
   AdjustedCosine(Axis axis): Base(axis) {}
 
   void Fit(Data &data) override {
-    auto vec_rows = erised::Avarage(data, Base::axis_);
-    size_t data_size = Base::axis_ == Axis::ROW?
+    auto vec_rows = erised::Avarage(data, this->axis_);
+    size_t data_size = this->axis_ == Axis::ROW?
         data.SizeRows(): data.SizeRows();
 
 //     Sim<T, Alloc> sim(data_size);
@@ -61,7 +61,7 @@ class AdjustedCosine: public Correlation<Data, Sim> {
 //   }
 
   std::array<value_type,3> SimTerms(const Data &data, size_t i, size_t j,
-                           value_type ia, value_type ja) {
+                                    value_type ia, value_type ja) {
     auto l = [ia, ja](value_type v1, value_type v2, std::array<value_type,3> ret) {
       std::array<float,3> r;
       r[0] = (v1 - ia)*(v2 - ja);
@@ -79,7 +79,8 @@ class AdjustedCosine: public Correlation<Data, Sim> {
       return r;
     };
 
-    std::array<value_type,3> arr = data.template ReduceCols<3>(i, j, l);
+    std::array<value_type,3> arr = data.template Reduce<3>(this->axis_, i, j, l);
+
     return arr;
   }
 
