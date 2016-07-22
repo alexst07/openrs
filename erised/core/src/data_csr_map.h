@@ -42,6 +42,10 @@ class DataCsrMap: public DataBase<T> {
   DataCsrMap<T, Alloc>& operator=(const DataCsrMap<T, Alloc>& m);
   DataCsrMap<T, Alloc>& operator=(DataCsrMap<T, Alloc>&& m);
 
+  size_t SizeCols() const noexcept;
+
+  size_t SizeRows() const noexcept;
+
   template<class Func>
   void Map(Func&& fn);
 
@@ -110,13 +114,13 @@ class DataCsrMap: public DataBase<T> {
   template<class Func>
   VectorValue ReduceRows(Func&& fn) const;
 
-  template<class Func, size_t N>
+  template<size_t N, class Func>
   std::array<T,N> Reduce(Axis axis, size_t i1, size_t i2, Func&& fn) const;
 
-  template<class Func, size_t N = 2>
+  template<size_t N, class Func>
   std::array<T,N> ReduceRows(size_t i1, size_t i2, Func&& fn) const;
 
-  template<class Func, size_t N = 2>
+  template<size_t N, class Func>
   std::array<T,N> ReduceCols(size_t i1, size_t i2, Func&& fn) const;
 
   template<typename U, typename _Alloc>

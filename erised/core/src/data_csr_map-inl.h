@@ -149,6 +149,17 @@ T DataCsrMap<T, Alloc>::operator()(const Pos<DataBase<T>::order>& pos) const {
 }
 
 template<typename T, typename Alloc>
+size_t DataCsrMap<T, Alloc>::SizeCols() const noexcept {
+  return size_cols_;
+}
+
+template<typename T, typename Alloc>
+size_t DataCsrMap<T, Alloc>::SizeRows() const noexcept {
+  return size_rows_;
+}
+
+
+template<typename T, typename Alloc>
 T DataCsrMap<T, Alloc>::operator()(size_type x, size_type y) const {
   return this->operator()({x, y});
 }
@@ -714,9 +725,9 @@ void DataCsrMap<T, Alloc>::Map(Axis axis, Func&& fn) {
 }
 
 template<typename T, typename Alloc>
-template<class Func, size_t N>
-typename std::array<T,N> DataCsrMap<T, Alloc>::ReduceRows(size_t i1, size_t i2,
-                                                          Func&& fn) const {
+template<size_t N, class Func>
+std::array<T,N> DataCsrMap<T, Alloc>::ReduceRows(size_t i1, size_t i2,
+                                                 Func&& fn) const {
   Range<size_t> range(0, size_cols_);
   typename std::array<T,N> zarray{};
 
@@ -752,7 +763,7 @@ typename std::array<T,N> DataCsrMap<T, Alloc>::ReduceRows(size_t i1, size_t i2,
 }
 
 template<typename T, typename Alloc>
-template<class Func, size_t N>
+template<size_t N, class Func>
 typename std::array<T,N> DataCsrMap<T, Alloc>::ReduceCols(size_t i1, size_t i2,
                                                           Func&& fn) const {
   typename std::array<T,N> zarray{};
@@ -790,7 +801,7 @@ typename std::array<T,N> DataCsrMap<T, Alloc>::ReduceCols(size_t i1, size_t i2,
 }
 
 template<typename T, typename Alloc>
-template<class Func, size_t N>
+template<size_t N, class Func>
 std::array<T,N> DataCsrMap<T, Alloc>::Reduce(Axis axis, size_t i1, size_t i2,
                                              Func&& fn) const {
   if (axis == Axis::ROW) {

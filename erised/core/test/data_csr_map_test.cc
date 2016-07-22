@@ -1,7 +1,10 @@
 #include <gtest/gtest.h>
 #include <iostream>
+#include <type_traits>
 
 #include "data_csr_map.h"
+
+using testing::Types;
 
 template <class Data>
 class DataRatingTest : public ::testing::Test {
@@ -194,7 +197,7 @@ TYPED_TEST_P(DataRatingTest, MapCols) {
   ASSERT_FLOAT_EQ(1.8, v);
 }
 
-TYPED_TEST_P(DataRatingTest, ReduceRows) {
+TYPED_TEST_P(DataRatingTest, ReduceRowsVec) {
   typedef decltype(this->mat_) TYPE;
 
   TYPE mat1 = this->mat_;
@@ -208,7 +211,7 @@ TYPED_TEST_P(DataRatingTest, ReduceRows) {
     ASSERT_FLOAT_EQ(vec[i], vtest[i]);
 }
 
-TYPED_TEST_P(DataRatingTest, ReduceCols) {
+TYPED_TEST_P(DataRatingTest, ReduceColsVec) {
   typedef decltype(this->mat_) TYPE;
 
   TYPE mat1 = this->mat_;
@@ -223,10 +226,6 @@ TYPED_TEST_P(DataRatingTest, ReduceCols) {
 }
 
 TYPED_TEST_P(DataRatingTest, ReduceRowsPair) {
-  typedef decltype(this->mat_) TYPE;
-
-  TYPE mat1 = this->mat_;
-
   auto l = [](float v1, float v2, std::array<float,2> ret) {
     std::array<float,2> r;
     r[0] = v1*v2;
@@ -237,22 +236,18 @@ TYPED_TEST_P(DataRatingTest, ReduceRowsPair) {
     return r;
   };
 
-  auto vec = mat1.ReduceRows(3, 5, l);
+  auto vec = this->mat_.template ReduceRows<2>(3, 5, l);
 
   ASSERT_FLOAT_EQ(vec[0], 0.3284);
   ASSERT_FLOAT_EQ(vec[1], 0.6568);
 
-  vec = mat1.ReduceRows(1, 2, l);
+  vec = this->mat_.template ReduceRows<2>(1, 2, l);
 
   ASSERT_FLOAT_EQ(vec[0], 0);
   ASSERT_FLOAT_EQ(vec[1], 0);
 }
 
 TYPED_TEST_P(DataRatingTest, ReduceColsPair) {
-  typedef decltype(this->mat_) TYPE;
-
-  TYPE mat1 = this->mat_;
-
   auto l = [](float v1, float v2, std::array<float,2> ret) {
     std::array<float,2> r;
     r[0] = v1*v2;
@@ -263,12 +258,12 @@ TYPED_TEST_P(DataRatingTest, ReduceColsPair) {
     return r;
   };
 
-  auto vec = mat1.ReduceCols(3, 5, l);
+  auto vec = this->mat_.template ReduceCols<2>(3, 5, l);
 
   ASSERT_FLOAT_EQ(vec[0], 0);
   ASSERT_FLOAT_EQ(vec[1], 0);
 
-  vec = mat1.ReduceCols(1, 2, l);
+  vec = this->mat_.template ReduceCols<2>(1, 2, l);
 
   ASSERT_FLOAT_EQ(vec[0], 1.12);
   ASSERT_FLOAT_EQ(vec[1], 2.24);
@@ -283,14 +278,14 @@ REGISTER_TYPED_TEST_CASE_P(DataRatingTest,
                            AssignMove,
                            MapRows,
                            MapCols,
-                           ReduceRows,
-                           ReduceCols,
+                           ReduceRowsVec,
+                           ReduceColsVec,
                            ReduceRowsPair,
                            ReduceColsPair
                           );
 
-typedef ::testing::Types<erised::DataCsrMap<float>> Types;
-INSTANTIATE_TYPED_TEST_CASE_P(My, DataRatingTest, Types);
+typedef Types<erised::DataCsrMap<float>> DataTypes;
+INSTANTIATE_TYPED_TEST_CASE_P(SimpleDataTest, DataRatingTest, DataTypes);
 
 int main(int argc, char **argv) {
   ::testing::InitGoogleTest(&argc, argv);
