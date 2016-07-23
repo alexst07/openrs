@@ -10,6 +10,7 @@
 #include "exception.h"
 #include "data_base.h"
 #include "basic_statistic.h"
+#include "parallel.h"
 
 namespace erised {
 
@@ -41,19 +42,35 @@ class AdjustedCosine: public Correlation<Data, Sim> {
     size_t data_size = this->axis_ == Axis::ROW?
         data.SizeRows(): data.SizeRows();
 
-//     Sim<T, Alloc> sim(data_size);
+    // Calculates the avarages for all lines in the axis
+    auto avgs = erised::Avarage(data, this->axis_);
 
-    for (size_t i = 0; i < data_size; i++) {
-//       sim[i] =
-    }
+    Sim sim(data_size);
+    Range<size_t> range_sim(0, data_size);
+
+    // To calculates all similarities with have a serie:]
+    // (n-1) + (n-2) + (n-3) + ...
+    // parallel_for is used for main loop, but each item
+    // calculates its similarity serially
+    parallel_for(range_sim, [&](const Range<size_t>& r){
+      // Scan each line and search for specific column
+      for(auto i = r.begin(); i != r.end(); ++i) {
+        for (size_t j = i+1; j < data_size; j++) {
+          auto arr = SimTerms(data, i, j, avgs[i], avgs[j]);
+          sim(i, j) = arr[0]/(sqrt(arr[1])*sqrt(arr[2]));
+        }
+      }
+    });
+
+    sim_ = std::move(sim_);
   }
 
   const Sim& Similarity() const noexcept override {
-
+    return sim_;
   }
 
   Sim& Similarity() noexcept override {
-
+    return sim_;
   }
 
 //   typename Sim<T, Alloc>::Slice Predict(size_t i) override {
@@ -85,7 +102,7 @@ class AdjustedCosine: public Correlation<Data, Sim> {
   }
 
  private:
-
+  Sim sim_;
 };
 
 // template<

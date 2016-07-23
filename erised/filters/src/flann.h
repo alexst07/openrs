@@ -64,11 +64,11 @@ class SimMat {
   }
 
   inline T& operator()(size_t x, size_t y) {
-    return mat_[size_*x + y];
+    return mat_.ptr()[size_*x + y];
   }
 
   inline const T& operator()(size_t x, size_t y) const {
-    return mat_[size_*x + y];
+    return mat_.ptr()[size_*x + y];
   }
 
   inline const T* Data() const noexcept {
