@@ -36,7 +36,7 @@ class SimMatRef {
 };
 
 template<class T, class Alloc = std::allocator<T>>
-class SimMat {
+class SimMat: protected ::flann::Matrix<T> {
  public:
   static constexpr bool continuous = true;
 
@@ -48,50 +48,94 @@ class SimMat {
   inline SimMat(size_t size)
     : size_(size)
     , delete_(true)
-    ,mat_(new T[size_*size_], size, size) {}
+    , ::flann::Matrix<T>(new T[size*size], size, size) {}
 
   inline SimMat(T* data, size_t size)
-    : size_(size), delete_(false), mat_(data, size, size) {}
+  : size_(size), delete_(false), ::flann::Matrix<T>(data, size, size) {}
 
   inline SimMat(const std::vector<T>& v, size_t size)
     : size_(size)
     , delete_(false)
-    , mat_(const_cast<T*>(v.data()), size, size) {}
+    , ::flann::Matrix<T>(reinterpret_cast<T*>(v.data()), size, size) {}
+
+  SimMat(SimMat&& sim) {
+    this->data = sim.data;
+    sim.data = nullptr;
+
+    this->rows = sim.rows;
+    this->stride = sim.stride;
+    this->cols = sim.cols;
+    size_ = sim.size_;
+    delete_ = sim.delete_;
+
+    sim.rows = 0;
+    sim.stride = 0;
+    sim.cols = 0;
+    sim.size_ = 0;
+    sim.delete_ = false;
+  }
+
+  SimMat<T, Alloc>& operator=(const SimMat<T, Alloc>& sim) {
+    // self-assignment check
+    if (this != &sim) {
+      size_ = sim.size_;
+      delete_ = sim.delete_;
+    }
+
+    return *this;
+  }
+
+  SimMat<T, Alloc>& operator=(SimMat<T, Alloc>&& sim) {
+    this->data = sim.data;
+    sim.data = nullptr;
+
+    this->rows = sim.rows;
+    this->stride = sim.stride;
+    this->cols = sim.cols;
+    size_ = sim.size_;
+    delete_ = sim.delete_;
+
+    sim.rows = 0;
+    sim.stride = 0;
+    sim.cols = 0;
+    sim.size_ = 0;
+    sim.delete_ = false;
+
+    return *this;
+  }
 
   inline ~SimMat() {
     if (delete_)
-      delete mat_.ptr();
+      delete this->data;
+  }
+
+  inline void operator()(T value, size_t x, size_t y) {
+    reinterpret_cast<T*>(this->data)[size_*x + y] = value;
+    reinterpret_cast<T*>(this->data)[size_*y + x] = value;
   }
 
   inline T& operator()(size_t x, size_t y) {
-    return mat_.ptr()[size_*x + y];
+    return reinterpret_cast<T*>(this->data)[size_*x + y];
   }
 
   inline const T& operator()(size_t x, size_t y) const {
-    return mat_.ptr()[size_*x + y];
+    return reinterpret_cast<T*>(this->data)[size_*x + y];
   }
 
   inline const T* Data() const noexcept {
-    return mat_.ptr();
+    return this->data;
   }
 
   inline T* Data() noexcept {
-    return mat_.ptr();
+    return this->data;
   }
 
   inline size_t Capacity() const noexcept {
     return size_;
   }
 
-  inline size_t SetCapacity() const noexcept {
-    if (delete_)
-      delete mat_.ptr();
-
-
-  }
-
   inline ::flann::Matrix<T>& FlannMat() noexcept {
-    return mat_;
+    return ::flann::Matrix<T>(this->data, size_, size_);
   }
 
   template<typename U, typename UAlloc>
@@ -100,16 +144,15 @@ class SimMat {
  private:
   size_t size_;
   bool delete_;
-  ::flann::Matrix<T> mat_;
 };
 
 template<typename U, typename UAlloc>
 std::ostream& operator<<(std::ostream& stream, const SimMat<U, UAlloc>& mat) {
-  for (int i = 0; i < mat.rows_*mat.cols_; i++) {
-    stream << mat.mat_.ptr()[i] << " ";
-
-    if ((i + 1) % mat.cols_ == 0)
-      stream << "\n";
+  for (int i = 0; i < mat.size_; i++) {
+    for (int j = 0; j < mat.size_; j++) {
+      stream << mat(i, j) << " ";
+    }
+    stream << "\n";
   }
 
   return stream;

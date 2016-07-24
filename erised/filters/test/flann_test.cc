@@ -5,6 +5,22 @@
 
 #include "flann.h"
 
+TEST(Sample, MoveSim) {
+  erised::flann::SimMat<float> sim(2);
+  sim(1.2, 0, 0);
+  sim(1.2, 1, 0);
+  sim(1.2, 0, 1);
+  sim(1.2, 1, 1);
+
+  erised::flann::SimMat<float> sim2;
+
+  std::cout << sim;
+
+  sim2 = std::move(sim);
+
+  std::cout << sim2;
+}
+
 TEST(Sample, Sampleunit) {
 //   using namespace erised::flann;
 //   size_t nn = 3;
