@@ -28,7 +28,7 @@ class CorrelationTest : public ::testing::Test {
 TYPED_TEST_CASE_P(CorrelationTest);
 
 TYPED_TEST_P(CorrelationTest, AdjustedCosine) {
-  erised::AdjustedCosine<
+  erised::Correlation<
       erised::DataCsrMap<float>,
       erised::flann::SimMat<float>> adcos(erised::Axis::ROW);
 
@@ -38,6 +38,11 @@ TYPED_TEST_P(CorrelationTest, AdjustedCosine) {
 
   float res = arr[0]/(sqrt(arr[1])*sqrt(arr[2]));
   ASSERT_NEAR(res, 0.83918, 0.01);
+
+  adcos.Fit(mat1);
+  auto& sims = adcos.Similarity();
+
+  std::cout << sims;
 }
 
 

@@ -16,28 +16,12 @@ namespace erised {
 
 template<class Data, class Sim>
 class Correlation {
- public:
-  virtual void Fit(Data &data) = 0;
-  virtual const Sim& Similarity() const noexcept = 0;
-  virtual Sim& Similarity() noexcept = 0;
-
-//   virtual typename Sim<T, Alloc>::Slice Predict(size_t i) = 0;
-
- protected:
-  Correlation(Axis axis):axis_(axis) {}
-
-  Axis axis_;
-};
-
-template<class Data, class Sim>
-class AdjustedCosine: public Correlation<Data, Sim> {
-  using Base = Correlation<Data, Sim>;
   using value_type = typename Data::value_type;
 
  public:
-  AdjustedCosine(Axis axis): Base(axis) {}
+  Correlation(Axis axis): axis_(axis) {}
 
-  void Fit(Data &data) override {
+  void Fit(Data &data) {
     auto vec_rows = erised::Avarage(data, this->axis_);
     size_t data_size = this->axis_ == Axis::ROW?
         data.SizeRows(): data.SizeRows();
@@ -57,19 +41,19 @@ class AdjustedCosine: public Correlation<Data, Sim> {
       for(auto i = r.begin(); i != r.end(); ++i) {
         for (size_t j = i+1; j < data_size; j++) {
           auto arr = SimTerms(data, i, j, avgs[i], avgs[j]);
-          sim(i, j) = arr[0]/(sqrt(arr[1])*sqrt(arr[2]));
+          sim(arr[0]/(sqrt(arr[1])*sqrt(arr[2])), i, j);
         }
       }
     });
 
-    sim_ = std::move(sim_);
+    sim_ = std::move(sim);
   }
 
-  const Sim& Similarity() const noexcept override {
+  const Sim& Similarity() const noexcept {
     return sim_;
   }
 
-  Sim& Similarity() noexcept override {
+  Sim& Similarity() noexcept {
     return sim_;
   }
 
@@ -103,6 +87,7 @@ class AdjustedCosine: public Correlation<Data, Sim> {
 
  private:
   Sim sim_;
+  Axis axis_;
 };
 
 // template<
