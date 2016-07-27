@@ -21,7 +21,7 @@ class Correlation {
  public:
   Correlation(Axis axis): axis_(axis) {}
 
-  void Fit(Data &data) {
+  void Fit(const Data& data) {
     auto vec_rows = erised::Avarage(data, this->axis_);
     size_t data_size = this->axis_ == Axis::ROW?
         data.SizeRows(): data.SizeRows();
