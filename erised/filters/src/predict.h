@@ -27,7 +27,7 @@ class Predict {
                                  const std::vector<size_t>& indexes,
                                  Func&& fn) {
     using const_iter = std::vector<size_t>::const_iterator;
-    typename std::array<T,N> zarray{};
+    std::array<value_type,N> zarray{};
 
     // Use the index to get only elements that interest
     Range<const_iter> range(indexes.begin(), indexes.end());
@@ -42,20 +42,20 @@ class Predict {
             // for a specific item
             value_type data_elem = static_cast<value_type>(0);
             if (axis_ == Axis::ROW) {
-              value_type = data(ri, it);
+              data_elem = data(ri, it);
             } else {
-              value_type = data(it, ri);
+              data_elem = data(it, ri);
             }
 
             // Similarity is a simetric matrix, so, (it, ri) == (ri, it)
             value_type sim_elem = sim(it, ri);
 
-            rets = fn(it, value_type, sim_elem, rets);
+            rets = fn(it, data_elem, sim_elem, rets);
           }
 
           return std::move(rets);
-        }, [](typename std::array<T,N> a, typename std::array<T,N> b) {
-          typename std::array<T,N> acc;
+        }, [](std::array<value_type,N> a, std::array<value_type,N> b) {
+          std::array<value_type,N> acc;
           for (int i = 0; i < N; i++) {
             acc[i] = a[i] + b[i];
           }
@@ -65,7 +65,7 @@ class Predict {
     return ret_arr;
   }
 
-  template<class Func>
+  template<size_t N, class Func>
   value_type Pred(const std::array<value_type,N>& arr, Func&& fn) {
     return fn(arr);
   }
