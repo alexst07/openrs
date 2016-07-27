@@ -39,6 +39,7 @@ class Mat: protected ::flann::Matrix<T> {
  public:
   static constexpr bool continuous = true;
 
+  using value_type = T;
   using iterator = typename std::vector<T>::iterator;
   using const_iterator = typename std::vector<T>::const_iterator;
 
@@ -60,8 +61,27 @@ class Mat: protected ::flann::Matrix<T> {
     : row_size_(rows)
     , col_size_(cols)
     , delete_(false)
-    , ::flann::Matrix<T>(reinterpret_cast<T*>(v.data()), row_size_, col_size_)
-    {}
+    , ::flann::Matrix<T>(const_cast<T*>(v.data()),
+                         row_size_, col_size_) {}
+
+  inline Mat(const Mat& mat) {
+    // self-assignment check
+    if (this != &mat) {
+      row_size_ = mat.row_size_;
+      col_size_ = mat.row_size_;
+      delete_ = mat.delete_;
+      this->rows = mat.rows;
+      this->stride = mat.stride;
+      this->cols = mat.cols;
+
+      if (!delete_)
+        this->data = reinterpret_cast<decltype(this->data)>(
+            new T[row_size_*col_size_]);
+
+      memcpy(this->data, mat.data, col_size_*col_size_*sizeof(T));
+    }
+  }
+
 
   Mat(Mat&& mat) {
     this->data = mat.data;
@@ -88,6 +108,15 @@ class Mat: protected ::flann::Matrix<T> {
       row_size_ = mat.row_size_;
       col_size_ = mat.row_size_;
       delete_ = mat.delete_;
+      this->rows = mat.rows;
+      this->stride = mat.stride;
+      this->cols = mat.cols;
+
+      if (!delete_)
+        this->data = reinterpret_cast<decltype(this->data)>(
+            new T[row_size_*col_size_]);
+
+      memcpy(this->data, mat.data, col_size_*col_size_*sizeof(T));
     }
 
     return *this;
@@ -123,7 +152,7 @@ class Mat: protected ::flann::Matrix<T> {
     reinterpret_cast<T*>(this->data)[col_size_*x + y] = value;
   }
 
-  inline T& operator()(size_t x, size_t y) {
+  T& operator()(size_t x, size_t y) {
     return reinterpret_cast<T*>(this->data)[col_size_*x + y];
   }
 
@@ -199,6 +228,18 @@ class SimMat: public Mat<T, Alloc> {
   void operator()(T value, size_t x, size_t y) override {
     reinterpret_cast<T*>(this->data)[this->col_size_*x + y] = value;
     reinterpret_cast<T*>(this->data)[this->row_size_*y + x] = value;
+  }
+
+  inline T& operator()(size_t x, size_t y) {
+    return Mat<T, Alloc>::operator()(x, y);
+  }
+
+  inline const T& operator()(size_t x, size_t y) const {
+    return Mat<T, Alloc>::operator()(x, y);
+  }
+
+  inline const T* Data() const noexcept {
+    return this->data;
   }
 };
 

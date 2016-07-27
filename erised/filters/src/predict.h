@@ -15,7 +15,7 @@
 
 namespace erised {
 
-template<class Sim, class Data>
+template<class Data, class Sim>
 class Predict {
  public:
   using value_type = typename Sim::value_type;
@@ -40,17 +40,17 @@ class Predict {
           for(auto it = r.begin(); it != r.end(); ++it) {
             // row gets the rating of an user and cols gets the ratings
             // for a specific item
-            value_type data_elem = static_cast<value_type>(0);
+            typename Data::value_type data_elem = static_cast<value_type>(0);
             if (axis_ == Axis::ROW) {
-              data_elem = data(ri, it);
+              data_elem = data(ri, *it);
             } else {
-              data_elem = data(it, ri);
+              data_elem = data(*it, ri);
             }
 
             // Similarity is a simetric matrix, so, (it, ri) == (ri, it)
-            value_type sim_elem = sim(it, ri);
+            value_type sim_elem = sim(*it, ri);
 
-            rets = fn(it, data_elem, sim_elem, rets);
+            rets = fn(*it, data_elem, sim_elem, rets);
           }
 
           return std::move(rets);
