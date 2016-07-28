@@ -1,6 +1,6 @@
 #pragma once
 
-#define ERISED_FILTER_H_
+#define ERISED_PREDICT_H_
 
 #include <initializer_list>
 #include <vector>
@@ -15,8 +15,9 @@
 
 namespace erised {
 
-template<class Data, class Sim>
+template<class Data, class Sim, class Model>
 class Predict {
+  friend class Model;
  public:
   using value_type = typename Sim::value_type;
 
