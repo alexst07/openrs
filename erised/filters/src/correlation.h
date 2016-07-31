@@ -6,6 +6,7 @@
 #include <vector>
 #include <array>
 #include <memory>
+#include <unordered_map>
 
 #include "exception.h"
 #include "data_base.h"
@@ -13,6 +14,13 @@
 #include "parallel.h"
 
 namespace erised {
+
+// template<class T, class Sim, class Alloc>
+// class NeighborsSim {
+//
+//
+//   std::vector<std::unordered_map<size_t, std::vector<value_type>>> mat_;
+// };
 
 template<class Data, class Sim>
 class Correlation {
@@ -56,6 +64,23 @@ class Correlation {
   Sim& Similarity() noexcept {
     return sim_;
   }
+
+//   std::vector<std::unordered_map<size_t, std::vector<value_type>>>
+//   Neighbors(size_t n) {
+//
+//   }
+//
+//   NeighborsElement(size_t i, size_t n) {
+//
+//   }
+//
+//   NeighborsIndexes(size_t n) {
+//
+//   }
+//
+//   NeighborsElementIndexes(size_t i, size_t n) {
+//
+//   }
 
 //   typename Sim<T, Alloc>::Slice Predict(size_t i) override {
 //

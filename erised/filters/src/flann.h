@@ -322,7 +322,7 @@ class Index {
  public:
   using Value = typename ::flann::Index<Distance>::ElementType;
 
-  inline Index(const SimMat<Value>& data, const IndexParams& params)
+  inline Index(const Mat<Value>& data, const IndexParams& params)
     : index_(::flann::Matrix<Value>(const_cast<Value*>(data.Data()),
                                     data.Rows(),
                                     data.Cols()), params){}
@@ -333,8 +333,8 @@ class Index {
     index_.buildIndex();
   }
 
-  void KnnSearch(const SimMat<Value>& query, SimMat<size_t>& indices,
-                 SimMat<Value>& dists, size_t nn,
+  void KnnSearch(const Mat<Value>& query, Mat<size_t>& indices,
+                 Mat<Value>& dists, size_t nn,
                  const SearchParams& params) {
     if (indices.Capacity() != query.Rows()*nn)
       ERISED_Error(Error::BAD_ALLOC, "Indices matrix has no enough size");

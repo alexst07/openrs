@@ -12,8 +12,12 @@
 #include "exception.h"
 #include "correlation.h"
 #include "data_base.h"
+#include "model.h"
 
 namespace erised {
+
+template<class Data, class Mat, class Model, size_t Type>
+class Predict {};
 
 template<class Data, class Sim, class Model>
 class Predict {
@@ -21,8 +25,15 @@ class Predict {
  public:
   using value_type = typename Sim::value_type;
 
-  Predict(Axis axis): axis_(axis) {}
+  Predict(CollaborativeModel& model)
+    : axis_(model.Axis())
+    , model_(model) {}
 
+  value_type Pred(size_t i) {
+
+  }
+
+ private:
   template<size_t N, class Func>
   std::array<value_type,N> Terms(const Data &data, const Sim& sim, size_t ri,
                                  const std::vector<size_t>& indexes,
@@ -71,8 +82,6 @@ class Predict {
     return fn(arr);
   }
 
- private:
   Axis axis_;
+  CollaborativeModel& model_;
 };
-
-}
