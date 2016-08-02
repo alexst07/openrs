@@ -19,8 +19,9 @@ namespace erised {
 template<class Data, class Mat, class Model, size_t Type>
 class Predict {};
 
+template<>
 template<class Data, class Sim, class Model>
-class Predict {
+class Predict<Data, Sim, Model, 0> {
   friend class Model;
  public:
   using value_type = typename Sim::value_type;
@@ -61,6 +62,74 @@ class Predict {
 
             // Similarity is a simetric matrix, so, (it, ri) == (ri, it)
             value_type sim_elem = sim(*it, ri);
+
+            rets = fn(*it, data_elem, sim_elem, rets);
+          }
+
+          return std::move(rets);
+        }, [](std::array<value_type,N> a, std::array<value_type,N> b) {
+          std::array<value_type,N> acc;
+          for (int i = 0; i < N; i++) {
+            acc[i] = a[i] + b[i];
+          }
+          return std::move(acc);
+      });
+
+    return ret_arr;
+  }
+
+  template<size_t N, class Func>
+  value_type Pred(const std::array<value_type,N>& arr, Func&& fn) {
+    return fn(arr);
+  }
+
+  Axis axis_;
+  CollaborativeModel& model_;
+};
+
+template<>
+template<class Data, class Mat, class Model>
+class Predict<Data, Mat, Model, 1> {
+  friend class Model;
+ public:
+  using value_type = typename Sim::value_type;
+
+  Predict(CollaborativeModel& model)
+    : axis_(model.Axis())
+    , model_(model) {}
+
+  value_type Pred(size_t i) {
+
+  }
+
+ private:
+  template<size_t N, class Func>
+  std::array<value_type,N> Terms(const Data &data, const Mat& mat, size_t ri,
+                                 const std::vector<size_t>& indexes,
+                                 Func&& fn) {
+    using const_iter = std::vector<size_t>::const_iterator;
+    std::array<value_type,N> zarray{};
+
+    // Use the index to get only elements that interest
+    Range<size_t> range(0, mat.SizeCols());
+
+    // Executes the function fn on all elments
+    auto ret_arr = parallel_reduce(range, zarray,
+        [&](const Range<const_iter>& r, std::array<value_type,N> value) {
+          typename std::array<value_type,N> rets(std::move(value));
+
+          for(auto it = r.begin(); it != r.end(); ++it) {
+            // row gets the rating of an user and cols gets the ratings
+            // for a specific item
+            typename Data::value_type data_elem = static_cast<value_type>(0);
+            if (axis_ == Axis::ROW) {
+              data_elem = data(ri, *it);
+            } else {
+              data_elem = data(*it, ri);
+            }
+
+            // Similarity is a simetric matrix, so, (it, ri) == (ri, it)
+            value_type sim_elem = mat(*it, ri);
 
             rets = fn(*it, data_elem, sim_elem, rets);
           }
