@@ -17,7 +17,7 @@
 namespace erised {
 
 template<class Data, class Sim, class Model>
-class Predict;
+class PredictData;
 
 template<class Data, class Sim>
 class CollaborativeModel {
@@ -38,11 +38,11 @@ class CollaborativeModel {
     return correlation_.Similarity();
   }
 
-  const Sim& NeighborsSimilarity() const noexcept {
+  Sim& NeighborsSimilarity(size_t n) noexcept {
     return correlation_.Similarity();
   }
 
-  Sim& NeighborsSimilarity() noexcept {
+  Sim& NeighborsSimilarity(size_t i, size_t n) noexcept {
     return correlation_.Similarity();
   }
 
@@ -58,15 +58,16 @@ class CollaborativeModel {
  protected:
   template<size_t N, class Fn>
   std::array<value_type, N> PredTerms(
-      const Predict<Data, Sim, CollaborativeModel>& pred,
-      size_t i,
+      const PredictData<Data, Sim, CollaborativeModel>& pred, size_t i, size_t n,
       Fn&& fn) {
+    //TODO: Calculates the N indexes of neighbors
+    std::vector<size_t> indexes;
     auto res = pred.template Terms<N>(data_, Similarity(), i, indexes, fn);
     return res;
   }
 
-  virtual value_type Predict(
-      const Predict<Data, Sim, CollaborativeModel>& pred, size_t i) = 0;
+  virtual value_type Predict_(
+      const PredictData<Data, Sim, CollaborativeModel>& pred, size_t i) = 0;
 
   Data& data_;
   Correlation<Data, Sim> correlation_;
@@ -76,18 +77,21 @@ class CollaborativeModel {
 };
 
 template<class Data, class Sim>
-class UserFilter: public CollaborativeModel {
-  friend Predict<Data, Sim, CollaborativeModel>;
+class UserFilter: public CollaborativeModel<Data, Sim> {
+  using Pred = PredictData<Data, Sim, CollaborativeModel<Data, Sim>>;
+
+  friend Pred;
  public:
+  using value_type = typename CollaborativeModel<Data, Sim>::value_type;
+
   UserFilter(Data& data)
-    : CollaborativeModel(data, Axis::ROW)
+    : CollaborativeModel<Data, Sim>(data, Axis::ROW)
     , avgs_(erised::Avarage(data, Axis::ROW)) {}
 
  private:
-  value_type Predict(const Predict<Data, Sim>& pred, size_t i) override {
-
+  value_type Predict_(const Pred& pred, size_t i) override {
     auto arr = this->template PredTerms<2>(pred, i,
-      [&avgs_](size_t i, float v1, float v2, std::array<float, 2> arr){
+      [this](size_t i, float v1, float v2, std::array<float, 2> arr){
         std::array<float,2> terms;
         terms[0] = v1*(v2 - avgs_[i]);
         terms[1] = v1;
@@ -105,7 +109,7 @@ class UserFilter: public CollaborativeModel {
   }
 
  private:
-  std::vector avgs_;
+  std::vector<value_type> avgs_;
 };
 
 }

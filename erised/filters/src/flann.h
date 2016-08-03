@@ -241,6 +241,10 @@ class SimMat: public Mat<T, Alloc> {
   inline const T* Data() const noexcept {
     return this->data;
   }
+
+  inline size_t Size() const noexcept {
+    return this->row_size_;
+  }
 };
 
 

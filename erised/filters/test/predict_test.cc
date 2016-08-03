@@ -42,32 +42,32 @@ class PredictTest : public ::testing::Test {
   }
 };
 
-TEST_F(PredictTest, Predict) {
-  erised::Predict<erised::DataCsrMap<float>, erised::flann::SimMat<float>> pred(erised::Axis::ROW);
-  std::vector<size_t> indexes = {1, 2};
-
-  auto l = [](size_t i, float v1, float v2, std::array<float, 3> arr) {
-    std::array<float,3> r;
-    r[0] = v1;
-    std::cout << "v1: " << v1 << ", v2: " << v2 << "\n";
-
-    r[1] = v2;
-
-    r[2] = v1 + v2;
-
-    r[0] += arr[0];
-    r[1] += arr[1];
-    r[2] += arr[2];
-
-    return r;
-  };
-
-  auto res = pred.template Terms<3>(this->mat_, this->sim_, 0, indexes, l);
-  std::cout << this->sim_;
-
-  ASSERT_NEAR(res[0], 7, 0.01);
-  ASSERT_NEAR(res[1], 0.839181 + 0.606339, 0.01);
-}
+// TEST_F(PredictTest, Predict) {
+//   erised::Predict<erised::DataCsrMap<float>, erised::flann::SimMat<float>> pred(erised::Axis::ROW);
+//   std::vector<size_t> indexes = {1, 2};
+//
+//   auto l = [](size_t i, float v1, float v2, std::array<float, 3> arr) {
+//     std::array<float,3> r;
+//     r[0] = v1;
+//     std::cout << "v1: " << v1 << ", v2: " << v2 << "\n";
+//
+//     r[1] = v2;
+//
+//     r[2] = v1 + v2;
+//
+//     r[0] += arr[0];
+//     r[1] += arr[1];
+//     r[2] += arr[2];
+//
+//     return r;
+//   };
+//
+//   auto res = pred.template Terms<3>(this->mat_, this->sim_, 0, indexes, l);
+//   std::cout << this->sim_;
+//
+//   ASSERT_NEAR(res[0], 7, 0.01);
+//   ASSERT_NEAR(res[1], 0.839181 + 0.606339, 0.01);
+// }
 
 int main(int argc, char **argv) {
   ::testing::InitGoogleTest(&argc, argv);
