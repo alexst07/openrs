@@ -19,6 +19,9 @@ namespace erised {
 template<class Data, class Sim, class Model>
 class PredictData;
 
+template<class Model>
+class PredicVec;
+
 template<class Data, class Sim>
 class CollaborativeModel {
  public:
@@ -66,7 +69,7 @@ class CollaborativeModel {
     return res;
   }
 
-  virtual value_type Predict_(
+  virtual value_type Predict(
       const PredictData<Data, Sim, CollaborativeModel>& pred, size_t i) = 0;
 
   Data& data_;
@@ -89,7 +92,7 @@ class UserFilter: public CollaborativeModel<Data, Sim> {
     , avgs_(erised::Avarage(data, Axis::ROW)) {}
 
  private:
-  value_type Predict_(const Pred& pred, size_t i) override {
+  value_type Predict(const Pred& pred, size_t i) override {
     auto arr = this->template PredTerms<2>(pred, i,
       [this](size_t i, float v1, float v2, std::array<float, 2> arr){
         std::array<float,2> terms;
@@ -112,4 +115,41 @@ class UserFilter: public CollaborativeModel<Data, Sim> {
   std::vector<value_type> avgs_;
 };
 
+template <class C>
+class CollaborativeModelVec {
+ public:
+  using value_type = typename C::value_type;
+
+  CollaborativeModelVec(const C& ratings, const C& sim)
+    : ratings_(ratings)
+    , sim_(sim) {}
+
+ protected:
+  template<size_t N, class Fn>
+  std::array<value_type, N> PredTerms(
+      const PredicVec<CollaborativeModelVec>& pred, size_t i, size_t n,
+      Fn&& fn) {
+    //TODO: Calculates the N indexes of neighbors
+    std::vector<size_t> indexes;
+    auto res = pred.template Terms<N>(data_, Similarity(), i, indexes, fn);
+    return res;
+  }
+
+  virtual value_type Predict(
+      const PredicVec<CollaborativeModelVec>& pred, size_t i) = 0;
+
+  const C& ratings_;
+  const C& sim_;
+  value_type avg_;
+};
+
+template <class C>
+class ItemFilterVec: public CollaborativeModelVec<C> {
+ public:
+  ItemFilterVec(const C& ratings, const C& sim)
+    :CollaborativeModelVec<C>(ratings, sim) {}
+
+ private:
+
+};
 }

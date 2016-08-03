@@ -23,12 +23,12 @@ class PredictData {
  public:
   using value_type = typename Sim::value_type;
 
-  PredictData(CollaborativeModel<Data, Sim>& model)
+  PredictData(Model& model)
     : axis_(model.Axis())
     , model_(model) {}
 
-  value_type Pred(size_t i) {
-
+  value_type Predict(size_t i) {
+    return model_.Predict(*this, i);
   }
 
  private:
@@ -81,7 +81,7 @@ class PredictData {
   }
 
   Axis axis_;
-  CollaborativeModel<Data, Sim>& model_;
+  Model& model_;
 };
 
 template<class Model>
@@ -89,22 +89,28 @@ class PredicVec {
   friend Model;
 
  public:
-  PredicVec() = default;
+  using value_type = typename Model::value_type;
+
+  PredicVec(Model &model): model_(model) {}
+
+  value_type Predict() {
+    return model_.Predict(*this);
+  }
 
  private:
   /**
    * To predict the rating for an user on an item, only its vector is needed
    */
   template<size_t N, class C, class Func>
-  auto Terms(const C& data, C& sim, size_t ri, Func&& fn) ->
-      std::array<typename C::value_type,N> {
-    using value_type = typename C::value_type;
+  auto Terms(const C& data, C& sim, Func&& fn)->
+      std::array<value_type,N> {
 
     if (data.size() != sim.size())
       ERISED_Error(Error::INVALID_ARGUMENT, "data vector and sim vector have "
                                             "differents sizes");
 
     using const_iter = std::vector<size_t>::const_iterator;
+
     std::array<value_type,N> zarray{};
 
     // Use the index to get only elements that interest
@@ -134,6 +140,7 @@ class PredicVec {
     return ret_arr;
   }
 
+  Model& model_;
 };
 
 }
