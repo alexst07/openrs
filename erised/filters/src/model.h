@@ -20,7 +20,7 @@ template<class Data, class Sim, class Model>
 class PredictData;
 
 template<class Model>
-class PredicVec;
+class PredictVec;
 
 template<class Data, class Sim>
 class CollaborativeModel {
@@ -117,6 +117,8 @@ class UserFilter: public CollaborativeModel<Data, Sim> {
 
 template <class C>
 class CollaborativeModelVec {
+  using Pred = PredictVec<CollaborativeModelVec<C>>;
+  friend Pred;
  public:
   using value_type = typename C::value_type;
 
@@ -127,16 +129,14 @@ class CollaborativeModelVec {
  protected:
   template<size_t N, class Fn>
   std::array<value_type, N> PredTerms(
-      const PredicVec<CollaborativeModelVec>& pred, size_t i, size_t n,
+      const PredictVec<CollaborativeModelVec>& pred, size_t i, size_t n,
       Fn&& fn) {
-    //TODO: Calculates the N indexes of neighbors
-    std::vector<size_t> indexes;
-    auto res = pred.template Terms<N>(data_, Similarity(), i, indexes, fn);
+    auto res = pred.template Terms<N>(ratings_, sim_, fn);
     return res;
   }
 
   virtual value_type Predict(
-      const PredicVec<CollaborativeModelVec>& pred, size_t i) = 0;
+      const PredictVec<CollaborativeModelVec>& pred, size_t i) = 0;
 
   const C& ratings_;
   const C& sim_;
@@ -145,11 +145,39 @@ class CollaborativeModelVec {
 
 template <class C>
 class ItemFilterVec: public CollaborativeModelVec<C> {
+  // Every class derived from model must declare predict as friend
+  using Pred = PredictVec<CollaborativeModelVec<C>>;
+  friend Pred;
+
  public:
+  using value_type = typename C::value_type;
+
   ItemFilterVec(const C& ratings, const C& sim)
     :CollaborativeModelVec<C>(ratings, sim) {}
 
  private:
+  /**
+   * This method is used by Predict class to predict a value based
+   * on the model
+   */
+  value_type Predict(const Pred& pred, size_t i) override {
+  auto arr = this->template PredTerms<2>(pred, i,
+    [this](size_t i, float v1, float v2, std::array<float, 2> arr){
+      std::array<float,2> terms;
+      terms[0] = v1*v2;
+      terms[1] = v1;
+
+      terms[0] += arr[0];
+      terms[1] += arr[1];
+
+      return terms;
+    });
+
+  if (arr[1] == 0)
+    ERISED_Error(Error::DIVIDE_BY_ZERO, "Divide by zero exception");
+
+  return arr[0]/arr[1];
+}
 
 };
 }

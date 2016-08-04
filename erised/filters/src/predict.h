@@ -85,13 +85,13 @@ class PredictData {
 };
 
 template<class Model>
-class PredicVec {
+class PredictVec {
   friend Model;
 
  public:
   using value_type = typename Model::value_type;
 
-  PredicVec(Model &model): model_(model) {}
+  PredictVec(Model &model): model_(model) {}
 
   value_type Predict() {
     return model_.Predict(*this);
