@@ -115,28 +115,26 @@ class UserFilter: public CollaborativeModel<Data, Sim> {
   std::vector<value_type> avgs_;
 };
 
-template <class C>
+template <class C, class Derived>
 class CollaborativeModelVec {
-  using Pred = PredictVec<CollaborativeModelVec<C>>;
+  using Pred = PredictVec<Derived>;
   friend Pred;
  public:
   using value_type = typename C::value_type;
+  using container = C;
 
   CollaborativeModelVec(const C& ratings, const C& sim)
     : ratings_(ratings)
     , sim_(sim) {}
 
  protected:
-  template<size_t N, class Fn>
-  std::array<value_type, N> PredTerms(
-      const PredictVec<CollaborativeModelVec>& pred, size_t i, size_t n,
-      Fn&& fn) {
-    auto res = pred.template Terms<N>(ratings_, sim_, fn);
+  template<size_t N, class Func>
+  std::array<value_type, N> PredTerms(const Pred& pred, Func&& fn) {
+    auto res = pred.template Terms<N, Func>(ratings_, sim_, std::move(fn));
     return res;
   }
 
-  virtual value_type Predict(
-      const PredictVec<CollaborativeModelVec>& pred, size_t i) = 0;
+  virtual value_type Predict(const PredictVec<Derived>& pred) = 0;
 
   const C& ratings_;
   const C& sim_;
@@ -144,40 +142,41 @@ class CollaborativeModelVec {
 };
 
 template <class C>
-class ItemFilterVec: public CollaborativeModelVec<C> {
+class ItemFilterVec: public CollaborativeModelVec<C, ItemFilterVec<C>> {
   // Every class derived from model must declare predict as friend
-  using Pred = PredictVec<CollaborativeModelVec<C>>;
+  using Pred = PredictVec<ItemFilterVec>;
   friend Pred;
 
  public:
   using value_type = typename C::value_type;
+  using Base = CollaborativeModelVec<C, ItemFilterVec<C>>;
 
   ItemFilterVec(const C& ratings, const C& sim)
-    :CollaborativeModelVec<C>(ratings, sim) {}
+    :CollaborativeModelVec<C, ItemFilterVec<C>>(ratings, sim) {}
 
  private:
   /**
    * This method is used by Predict class to predict a value based
    * on the model
    */
-  value_type Predict(const Pred& pred, size_t i) override {
-  auto arr = this->template PredTerms<2>(pred, i,
-    [this](size_t i, float v1, float v2, std::array<float, 2> arr){
-      std::array<float,2> terms;
-      terms[0] = v1*v2;
-      terms[1] = v1;
+  value_type Predict(const Pred& pred) override {
+    auto arr = this->template PredTerms<2>(pred,
+      [this](size_t /*i*/, float v1, float v2, std::array<float, 2> arr){
+        std::array<float,2> terms;
+        terms[0] = v1*v2;
+        terms[1] = v2;
 
-      terms[0] += arr[0];
-      terms[1] += arr[1];
+        terms[0] += arr[0];
+        terms[1] += arr[1];
 
-      return terms;
-    });
+        return terms;
+      });
 
-  if (arr[1] == 0)
-    ERISED_Error(Error::DIVIDE_BY_ZERO, "Divide by zero exception");
+    if (arr[1] == 0)
+      ERISED_Error(Error::DIVIDE_BY_ZERO, "Divide by zero exception");
 
-  return arr[0]/arr[1];
-}
+    return arr[0]/arr[1];
+  }
 
 };
 }

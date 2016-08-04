@@ -42,7 +42,19 @@ class PredictTest : public ::testing::Test {
   }
 };
 
-// TEST_F(PredictTest, Predict) {
+TEST_F(PredictTest, PredictVec) {
+  using namespace erised;
+  std::vector<float> ratings = {1, 2, 4, 3, 2};
+  std::vector<float> sims = {0.8, 0.85, 0.88, 0.9, 0.92};
+
+  ItemFilterVec<std::vector<float>> item_model(ratings, sims);
+  PredictVec<ItemFilterVec<std::vector<float>>> predict(item_model);
+  float v = predict.Predict();
+
+  std::cout << "Value: " << v << "\n";
+}
+
+TEST_F(PredictTest, Predict) {
 //   erised::Predict<erised::DataCsrMap<float>, erised::flann::SimMat<float>> pred(erised::Axis::ROW);
 //   std::vector<size_t> indexes = {1, 2};
 //
@@ -67,7 +79,7 @@ class PredictTest : public ::testing::Test {
 //
 //   ASSERT_NEAR(res[0], 7, 0.01);
 //   ASSERT_NEAR(res[1], 0.839181 + 0.606339, 0.01);
-// }
+}
 
 int main(int argc, char **argv) {
   ::testing::InitGoogleTest(&argc, argv);

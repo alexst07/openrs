@@ -13,6 +13,7 @@
 #include "correlation.h"
 #include "data_base.h"
 #include "model.h"
+#include "parallel.h"
 
 namespace erised {
 
@@ -87,9 +88,11 @@ class PredictData {
 template<class Model>
 class PredictVec {
   friend Model;
+  friend typename Model::Base;
 
  public:
   using value_type = typename Model::value_type;
+  using container = typename Model::container;
 
   PredictVec(Model &model): model_(model) {}
 
@@ -101,31 +104,30 @@ class PredictVec {
   /**
    * To predict the rating for an user on an item, only its vector is needed
    */
-  template<size_t N, class C, class Func>
-  auto Terms(const C& data, C& sim, Func&& fn)->
-      std::array<value_type,N> {
+  template<size_t N, class Func>
+  std::array<value_type,N> Terms(const container& ratings,
+                                 const container& sim,
+                                 Func&& fn) const {
 
-    if (data.size() != sim.size())
+    if (ratings.size() != sim.size())
       ERISED_Error(Error::INVALID_ARGUMENT, "data vector and sim vector have "
                                             "differents sizes");
-
-    using const_iter = std::vector<size_t>::const_iterator;
 
     std::array<value_type,N> zarray{};
 
     // Use the index to get only elements that interest
-    Range<const_iter> range(0, data.size());
+    Range<size_t> range(0, ratings.size());
 
     // Executes the function fn on all elments
     auto ret_arr = parallel_reduce(range, zarray,
-        [&](const Range<const_iter>& r, std::array<value_type,N> value) {
+        [&](const Range<size_t>& r, std::array<value_type,N> value) {
           typename std::array<value_type,N> rets(std::move(value));
 
           for(auto it = r.begin(); it != r.end(); ++it) {
-            value_type data_elem = data[*it];
-            value_type sim_elem = sim[*it];
+            value_type data_elem = ratings[it];
+            value_type sim_elem = sim[it];
 
-            rets = fn(*it, data_elem, sim_elem, rets);
+            rets = fn(it, data_elem, sim_elem, rets);
           }
 
           return rets;
