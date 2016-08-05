@@ -22,10 +22,13 @@ class PredictData;
 template<class Model>
 class PredictVec;
 
-template<class Data, class Sim>
+template<class Data, class Sim, class Derived>
 class CollaborativeModel {
+  using Pred = PredictData<Derived>;
  public:
   using value_type = typename Sim::value_type;
+  using Data = Data;
+  using Sim = Sim;
 
   CollaborativeModel(Data& data, Axis axis)
     : data_(data)
@@ -86,6 +89,7 @@ class UserFilter: public CollaborativeModel<Data, Sim> {
   friend Pred;
  public:
   using value_type = typename CollaborativeModel<Data, Sim>::value_type;
+  using Base = CollaborativeModelVec<C, ItemFilterVec<C>>;
 
   UserFilter(Data& data)
     : CollaborativeModel<Data, Sim>(data, Axis::ROW)

@@ -164,6 +164,22 @@ class Mat: protected ::flann::Matrix<T> {
     return this->data;
   }
 
+  inline size_t Size() const noexcept {
+    return this->row_size_*this->col_size_;
+  }
+
+  inline size_t size() const noexcept {
+    return Size();
+  }
+
+  inline size_t Rows() const noexcept {
+    return this->row_size_;
+  }
+
+  inline size_t Cols() const noexcept {
+    return this->col_size_;
+  }
+
   inline T* Data() noexcept {
     return this->data;
   }

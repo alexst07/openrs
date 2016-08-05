@@ -17,9 +17,10 @@
 
 namespace erised {
 
-template<class Data, class Sim, class Model>
+template<class Model>
 class PredictData {
   friend Model;
+  friend typename Model::Base;
 
  public:
   using value_type = typename Sim::value_type;
