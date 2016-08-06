@@ -58,27 +58,57 @@ class Mat2d: public MatBase<T, 2> {
   Mat2d() = default;
   virtual ~Mat2d() = default;
 
+  virtual const T& operator(size_t x, size_t y) const = 0;
+  virtual T& operator(size_t x, size_t y) = 0;
+
   virtual T operator()(const Pos<2>& pos) const = 0;
 };
 
-template<typename T, class Derived>
+template<typename T, class Derived, class IterType>
 class MatContinuous: Mat2d<T> {
 
+ protected:
   // Iterator class
-  template <class Ref>
+  template <class Value>
   class Iter;
 
  public:
   using value_type = T;
+  using iter_type = IterType;
+  typedef Iter<iter_type> iterator;
+  typedef Iter<iter_type const> const_iterator;
 
   static constexpr size_t order = MatBase<T, 2>::order;
 
   MatContinuous() = default;
   virtual ~MatContinuous() = default;
 
-  virtual T operator()(const Pos<2>& pos) const = 0;
+  virtual value_type operator()(const Pos<2>& pos) const = 0;
 
- private:
+  virtual size_t Size() const noexcept = 0;
+
+  virtual value_type* Data() noexcept = 0;
+
+  virtual const value_type* Data() const noexcept = 0;
+
+  iterator begin() noexcept {
+    return iterator(Data());
+  }
+
+  const_iterator begin() const noexcept {
+    return const_iterator(Data());
+  }
+
+  iterator end() noexcept {
+    // Add the start of data with the size using pointer aritimetic
+    return iterator(Data() + Size());
+  }
+
+  const_iterator end() const noexcept {
+    return const_iterator(Data() + Size());
+  }
+
+ protected:
   template <class Value>
   class Iter
     : public boost::iterator_facade<Iter<Value>
@@ -116,9 +146,10 @@ class MatContinuous: Mat2d<T> {
   };
 };
 
-template<class T, class Derived>
+template<class T, class Derived, class IterType>
 class MatDiscontinuous: Mat2d<T> {
 
+ protected:
   // Iterator class
   template <class Ref>
   class Iter;
@@ -135,11 +166,29 @@ class MatDiscontinuous: Mat2d<T> {
 
   virtual T operator()(const Pos<2>& pos) const = 0;
 
-  virtual const typename Derived::iter_type& operator[](size_t) const = 0;
+  virtual const IterType& operator[](size_t) const = 0;
 
-  virtual typename Derived::iter_type& operator[](size_t) = 0;
+  virtual IterType& operator[](size_t) = 0;
 
- private:
+  virtual size_t Size() const noexcept = 0;
+
+  iterator begin() noexcept {
+    return iterator(*this, static_cast<size_t>(0));
+  }
+
+  const_iterator begin() const noexcept {
+    return const_iterator(static_cast<Derived>(*this), 0);
+  }
+
+  iterator end() noexcept {
+    return iterator(static_cast<Derived>(*this), Size());
+  }
+
+  const_iterator end() const noexcept {
+    return const_iterator(static_cast<Derived>(*this), Size());
+  }
+
+ protected:
     /**
    * @class Iter
    * @brief Iterator class for MatDiscontinuous

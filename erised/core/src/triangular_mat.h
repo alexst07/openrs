@@ -132,8 +132,13 @@ constexpr size_t TriangularMatElems(size_t size) {
  *
  */
 template<typename T>
-class TriangularMat {
+class TriangularMat: public MatDiscontinuous<T, TriangularMat<T>,
+    TriangularMatAxisRef<T>> {
+
  public:
+  using Base = MatDiscontinuous<T, TriangularMat<T>, TriangularMatAxisRef<T>>;
+  using iter_type = TriangularMatAxisRef<T>;
+
   TriangularMat(): elems_(0), size_(0), unit_(static_cast<T>(1)) {}
 
   explicit TriangularMat(size_t size)
@@ -240,7 +245,15 @@ class TriangularMat {
     return Element(x, y);
   }
 
-  size_t Size() const noexcept{
+  const iter_type& operator[](size_t i) const override {
+    return Row(i);
+  }
+
+  iter_type& operator[](size_t i ) override {
+    return Row(i);
+  }
+
+  size_t Size() const noexcept override {
     return size_;
   }
 
