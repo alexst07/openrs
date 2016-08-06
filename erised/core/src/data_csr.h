@@ -43,7 +43,7 @@ class DataCsr: public DataBase<T> {
 
   T ColReduce(size_t i, const ReduceFn& fn) const;
 
-  T operator()(const Pos<DataBase<T>::order>& pos) const override {};
+  T operator()(const Pos<2>& pos) const override {};
 
   size_t NumElements() const override {};
 

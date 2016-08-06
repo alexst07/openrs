@@ -123,7 +123,7 @@ std::ostream& operator<<(std::ostream& stream,
 }
 
 template<typename T, typename Alloc>
-T DataCsrMap<T, Alloc>::operator()(const Pos<DataBase<T>::order>& pos) const {
+T DataCsrMap<T, Alloc>::operator()(const Pos<2>& pos) const {
   size_t x = pos.X();
   size_t y = pos.Y();
 
