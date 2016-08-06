@@ -16,7 +16,7 @@
 
 namespace erised {
 
-template<class Data, class Sim, class Model>
+template<class Model>
 class PredictData;
 
 template<class Model>
@@ -27,8 +27,8 @@ class CollaborativeModel {
   using Pred = PredictData<Derived>;
  public:
   using value_type = typename Sim::value_type;
-  using Data = Data;
-  using Sim = Sim;
+  using data = Data;
+  using sim = Sim;
 
   CollaborativeModel(Data& data, Axis axis)
     : data_(data)
@@ -63,17 +63,15 @@ class CollaborativeModel {
 
  protected:
   template<size_t N, class Fn>
-  std::array<value_type, N> PredTerms(
-      const PredictData<Data, Sim, CollaborativeModel>& pred, size_t i, size_t n,
-      Fn&& fn) {
+  std::array<value_type, N> PredTerms(const Pred& pred, size_t i, size_t n,
+                                      Fn&& fn) {
     //TODO: Calculates the N indexes of neighbors
     std::vector<size_t> indexes;
     auto res = pred.template Terms<N>(data_, Similarity(), i, indexes, fn);
     return res;
   }
 
-  virtual value_type Predict(
-      const PredictData<Data, Sim, CollaborativeModel>& pred, size_t i) = 0;
+  virtual value_type Predict(const Pred& pred, size_t i) = 0;
 
   Data& data_;
   Correlation<Data, Sim> correlation_;
@@ -83,16 +81,17 @@ class CollaborativeModel {
 };
 
 template<class Data, class Sim>
-class UserFilter: public CollaborativeModel<Data, Sim> {
-  using Pred = PredictData<Data, Sim, CollaborativeModel<Data, Sim>>;
+class UserFilter: public CollaborativeModel<Data, Sim, UserFilter<Data, Sim>> {
+  using Pred = PredictData<UserFilter<Data, Sim>>;
 
   friend Pred;
  public:
-  using value_type = typename CollaborativeModel<Data, Sim>::value_type;
-  using Base = CollaborativeModelVec<C, ItemFilterVec<C>>;
+  using Base = CollaborativeModel<Data, Sim, UserFilter<Data, Sim>>;
+  using value_type = typename Base::value_type;
+
 
   UserFilter(Data& data)
-    : CollaborativeModel<Data, Sim>(data, Axis::ROW)
+    : Base(data, Axis::ROW)
     , avgs_(erised::Avarage(data, Axis::ROW)) {}
 
  private:

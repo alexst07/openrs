@@ -23,7 +23,9 @@ class PredictData {
   friend typename Model::Base;
 
  public:
-  using value_type = typename Sim::value_type;
+  using value_type = typename Model::value_type;
+  using Data = typename Model::data;
+  using Sim = typename Model::sim;
 
   PredictData(Model& model)
     : axis_(model.Axis())
