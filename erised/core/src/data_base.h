@@ -20,9 +20,7 @@ class Pos {
 template<>
 class Pos<2> {
  public:
-  Pos(size_t x, size_t y)
-    : x_(x)
-    , y_(y) {}
+  Pos(size_t x, size_t y): x_(x), y_(y) {}
 
   size_t X() const {
     return x_;
@@ -34,6 +32,18 @@ class Pos<2> {
 
  private:
   size_t x_, y_;
+};
+
+class Pos<1> {
+ public:
+  Pos(size_t i): i_(i) {}
+
+  size_t operator()() const {
+    return i_;
+  }
+
+ private:
+  size_t i_;
 };
 
 template<typename T, size_t N>
@@ -73,6 +83,20 @@ class Mat2d: public MatBase<T, 2> {
   }
 };
 
+template<typename T>
+class Vec: MatBase<T, 1> {
+ public:
+  using value_type = T;
+    static constexpr size_t order = MatBase<T, 1>::order;
+
+  Vec() = default;
+  virtual ~Vec() = default;
+
+  virtual value_type& operator[](size_t i) = 0;
+
+  virtual const value_type& operator[](size_t i) const = 0;
+};
+
 template<typename T, class Derived, class IterType>
 class MatContinuous: Mat2d<T> {
 
@@ -95,8 +119,6 @@ class MatContinuous: Mat2d<T> {
   virtual const value_type& operator()(size_t x, size_t y) const = 0;
 
   virtual value_type& operator()(size_t x, size_t y) = 0;
-
-  IterType operator[](size_t) const = 0;
 
   virtual size_t Size() const noexcept = 0;
 
@@ -180,8 +202,6 @@ class MatDiscontinuous: Mat2d<T> {
   virtual const value_type& operator()(size_t x, size_t y) const = 0;
 
   virtual value_type& operator()(size_t x, size_t y) = 0;
-
-  IterType operator[](size_t) const = 0;
 
   virtual size_t Size() const noexcept = 0;
 

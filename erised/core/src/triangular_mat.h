@@ -18,17 +18,10 @@ template<typename T>
 class TriangularMat;
 
 template<typename T>
-class TriangularMatAxisRef {
+class TriangularMatAxisRef: MatDiscontinuous<T, TriangularMatAxisRef<T>, T> {
   friend class TriangularMat<T>;
 
-  // Iterator class
-  template <class Value>
-  class _iter;
-
  public:
-  typedef _iter<TriangularMatAxisRef> iterator;
-  typedef _iter<TriangularMatAxisRef const> const_iterator;
-
   TriangularMatAxisRef(const TriangularMatAxisRef<T>& m)
     : ref_(m.ref_), axis_(m.axis_), axis_i_(m.axis_i_) {}
 
@@ -46,22 +39,6 @@ class TriangularMatAxisRef {
       return ref_(i, axis_i_);
   }
 
-  iterator begin() {
-    return iterator(*this, static_cast<size_t>(0));
-  }
-
-  const_iterator begin() const {
-    return const_iterator(*this, 0);
-  }
-
-  iterator end() {
-    return iterator(*this, ref_.Size());
-  }
-
-  const_iterator end() const {
-    return const_iterator(*this, ref_.Size());
-  }
-
   size_t Size() const noexcept {
     return ref_.Size();
   }
@@ -69,54 +46,6 @@ class TriangularMatAxisRef {
  private:
   TriangularMatAxisRef(TriangularMat<T>& ref, Axis axis, size_t axis_i)
     : ref_(ref), axis_(axis), axis_i_(axis_i) {}
-
-  /**
-   * @class _iter
-   * @brief Iterator class for TriangularMatAxisRef
-   *
-   * Different from others iterators where the pointer
-   * is used, on this case, the data isn't continuous
-   * so, only TriangularMatAxisRef knows to access the
-   * elements in the correct order, the other solution
-   * is use functional program to say to _iter how
-   * to iterate over data
-   */
-  template <class Value>
-  class _iter
-    : public boost::iterator_facade<_iter<Value>
-        , T
-        , boost::forward_traversal_tag> {
-    struct enabler {};
-
-   public:
-    _iter(Value& ref): ref_(ref), pos_(0) {}
-    _iter(Value& ref, size_t pos): ref_(ref), pos_(pos) {}
-
-    // make _iter's converting constructor disappear
-    // when the ref_ conversion would fail
-    template <class OtherValue>
-    _iter(
-      _iter<OtherValue> const& other
-      , typename boost::enable_if<
-          boost::is_convertible<OtherValue*,Value*>
-        , enabler
-      >::type = enabler()
-    ) : ref_(other.ref_) {}
-
-   private:
-    friend class boost::iterator_core_access;
-
-    bool equal(_iter<Value> const& other) const {
-      return this->pos_ == other.pos_;
-    }
-
-    void increment() { ++pos_; }
-
-    T& dereference() const { return ref_[pos_]; }
-
-    Value& ref_;
-    size_t pos_;
-  };
 
   TriangularMat<T>& ref_;
   Axis axis_;
@@ -243,14 +172,6 @@ class TriangularMat: public MatDiscontinuous<T, TriangularMat<T>,
 
   const T& operator()(size_t x, size_t y) const override {
     return Element(x, y);
-  }
-
-  const iter_type& operator[](size_t i) const override {
-    return Row(i);
-  }
-
-  iter_type& operator[](size_t i ) override {
-    return Row(i);
   }
 
   size_t Size() const noexcept override {
