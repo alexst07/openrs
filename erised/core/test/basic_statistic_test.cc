@@ -79,16 +79,16 @@ TYPED_TEST_P(BasicStatisticTest, StandardizationRows) {
   auto num_elems_rows = this->mat_.NumElementsLines();
   erised::Standardization(&mat2, erised::Axis::ROW, num_elems_rows);
 
-  auto v = mat2({0,0});
+  auto v = mat2(0,0);
   ASSERT_FLOAT_EQ(-1, v);
 
-  v = mat2({0,1});
+  v = mat2(0,1);
   ASSERT_FLOAT_EQ(1, v);
 
-  v = mat2({2,0});
+  v = mat2(2,0);
   ASSERT_NEAR(-1.111167, v, 0.01);
 
-  v = mat2({5,4});
+  v = mat2(5,4);
   ASSERT_NEAR(1.31954935115, v, 0.01);
 }
 
@@ -98,10 +98,10 @@ TYPED_TEST_P(BasicStatisticTest, StandardizationCols) {
   auto num_elems_cols = this->mat_.NumElementsCols();
   erised::Standardization(&mat2, erised::Axis::COL, num_elems_cols);
 
-  auto v = mat2({0,0});
+  auto v = mat2(0,0);
   ASSERT_NEAR(1.73205070605, v, 0.01);
 
-  v = mat2({1,6});
+  v = mat2(1,6);
   ASSERT_NEAR(1.35873257425, v, 0.01);
 }
 
@@ -111,16 +111,16 @@ TYPED_TEST_P(BasicStatisticTest, RescalingRows) {
   auto num_elems_rows = this->mat_.NumElementsLines();
   erised::Rescaling(&mat2, erised::Axis::ROW, num_elems_rows);
 
-  auto v = mat2({0,0});
+  auto v = mat2(0,0);
   ASSERT_FLOAT_EQ(0, v);
 
-  v = mat2({0,1});
+  v = mat2(0,1);
   ASSERT_FLOAT_EQ(1, v);
 
-  v = mat2({2,4});
+  v = mat2(2,4);
   ASSERT_NEAR(0.375, v, 0.01);
 
-  v = mat2({5,6});
+  v = mat2(5,6);
   ASSERT_NEAR(0.666666, v, 0.01);
 }
 
@@ -137,16 +137,16 @@ TYPED_TEST_P(BasicStatisticTest, RescalingCols) {
   auto num_elems_cols = mat.NumElementsCols();
   erised::Rescaling(&mat, erised::Axis::COL, num_elems_cols);
 
-  auto v = mat({0,0});
+  auto v = mat(0,0);
   ASSERT_FLOAT_EQ(1, v);
 
-  v = mat({2,3});
+  v = mat(2,3);
   ASSERT_FLOAT_EQ(1, v);
 
-  v = mat({1,6});
+  v = mat(1,6);
   ASSERT_NEAR(1, v, 0.01);
 
-  v = mat({3,6});
+  v = mat(3,6);
   ASSERT_NEAR(0.285, v, 0.01);
 }
 

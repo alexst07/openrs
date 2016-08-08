@@ -64,9 +64,9 @@ class DataCsrMap: public DataBase<T> {
   template<class Func>
   T ColReduce(size_t i, Func&& fn) const;
 
-  T operator()(const Pos<2>& pos) const override;
+  T& operator()(size_type x, size_type y) override;
 
-  T operator()(size_type x, size_type y) const;
+  const T& operator()(size_type x, size_type y) const override;
 
   size_t NumElements() const override;
 
@@ -140,6 +140,8 @@ class DataCsrMap: public DataBase<T> {
 
   size_type size_rows_;
   size_type size_cols_;
+
+  value_type zero_;
 };
 
 }

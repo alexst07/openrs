@@ -19,13 +19,13 @@ const int DataCsrMap<T, Alloc>::INVALID_LINE = -1;
 template<typename T, typename Alloc>
 DataCsrMap<T, Alloc>::DataCsrMap(const allocator_type& a)
   : size_rows_(0)
-  , size_cols_(0) {
-}
+  , size_cols_(0)
+  , zero_(static_cast<value_type>(0)) {}
 
 template<typename T, typename Alloc>
 DataCsrMap<T, Alloc>::DataCsrMap(
     std::initializer_list<std::initializer_list<T>> set,
-    const allocator_type& a) {
+    const allocator_type& a): zero_(static_cast<value_type>(0)) {
   size_type i = 0;
   size_type max_col = 0;
   size_type num_rows = 0;
@@ -70,17 +70,24 @@ template<typename T, typename Alloc>
 DataCsrMap<T, Alloc>::DataCsrMap(size_type rows, size_type cols,
                                  const allocator_type& a)
   : size_rows_(rows)
-  , size_cols_(cols) {
+  , size_cols_(cols)
+  , zero_(static_cast<value_type>(0)){
 }
 
 template<typename T, typename Alloc>
 DataCsrMap<T, Alloc>::DataCsrMap(const DataCsrMap<T, Alloc>& m)
-  : rows_(m.rows_), size_rows_(m.size_rows_), size_cols_(m.size_cols_) {
+  : rows_(m.rows_)
+  , size_rows_(m.size_rows_)
+  , size_cols_(m.size_cols_)
+  , zero_(m.zero_){
 }
 
 template<typename T, typename Alloc>
 DataCsrMap<T, Alloc>::DataCsrMap(DataCsrMap<T, Alloc>&& m)
-  : rows_(std::move(m.rows_), size_rows_(m.size_rows_), size_cols_(m.size_cols_)) {
+  : rows_(std::move(m.rows_))
+  , size_rows_(m.size_rows_)
+  , size_cols_(m.size_cols_)
+  , zero_(m.zero_) {
   m.size_rows_ = 0;
   m.size_cols_ = 0;
 }
@@ -93,6 +100,7 @@ DataCsrMap<T, Alloc>& DataCsrMap<T, Alloc>::operator=(
     rows_ = m.rows_;
     size_cols_ = m.size_cols_;
     size_rows_ = m.size_rows_;
+    zero_ = m.zero_;
   }
 
   return *this;
@@ -104,6 +112,7 @@ DataCsrMap<T, Alloc>& DataCsrMap<T, Alloc>::operator=(
   rows_ = std::move(m.rows_);
   size_cols_ = m.size_cols_;
   size_rows_ = m.size_rows_;
+  zero_ = m.zero_;
 
   return *this;
 }
@@ -123,10 +132,7 @@ std::ostream& operator<<(std::ostream& stream,
 }
 
 template<typename T, typename Alloc>
-T DataCsrMap<T, Alloc>::operator()(const Pos<2>& pos) const {
-  size_t x = pos.X();
-  size_t y = pos.Y();
-
+T& DataCsrMap<T, Alloc>::operator()(size_t x, size_t y) {
   // Check if is a valid coordenate
   if (x > size_rows_)
     ERISED_Error(Error::OUT_OF_RANGE, "value of x is greater or equal than %d",
@@ -145,7 +151,12 @@ T DataCsrMap<T, Alloc>::operator()(const Pos<2>& pos) const {
   if (it != map_row.end())
     return it->second;
 
-  return 0;
+  return zero_;
+}
+
+template<typename T, typename Alloc>
+const T& DataCsrMap<T, Alloc>::operator()(size_t x, size_t y) const {
+  return this->operator()(x, y);
 }
 
 template<typename T, typename Alloc>
@@ -156,12 +167,6 @@ size_t DataCsrMap<T, Alloc>::SizeCols() const noexcept {
 template<typename T, typename Alloc>
 size_t DataCsrMap<T, Alloc>::SizeRows() const noexcept {
   return size_rows_;
-}
-
-
-template<typename T, typename Alloc>
-T DataCsrMap<T, Alloc>::operator()(size_type x, size_type y) const {
-  return this->operator()({x, y});
 }
 
 template<typename T, typename Alloc>

@@ -46,7 +46,9 @@ class MatBase {
   MatBase() = default;
   virtual ~MatBase() = default;
 
-  virtual T operator()(const Pos<order>& pos) const = 0;
+  virtual value_type& operator()(const Pos<order>& pos) = 0;
+
+  virtual const value_type& operator()(const Pos<order>& pos) const = 0;
 };
 
 template<typename T>
@@ -58,10 +60,17 @@ class Mat2d: public MatBase<T, 2> {
   Mat2d() = default;
   virtual ~Mat2d() = default;
 
-  virtual const T& operator(size_t x, size_t y) const = 0;
-  virtual T& operator(size_t x, size_t y) = 0;
+  virtual const value_type& operator()(size_t x, size_t y) const = 0;
 
-  virtual T operator()(const Pos<2>& pos) const = 0;
+  virtual value_type& operator()(size_t x, size_t y) = 0;
+
+  virtual value_type& operator()(const Pos<2>& pos) {
+    return this->operator()(pos.X(), pos.Y());
+  }
+
+  virtual const value_type& operator()(const Pos<2>& pos) const {
+    return this->operator()(pos.X(), pos.Y());
+  }
 };
 
 template<typename T, class Derived, class IterType>
@@ -83,7 +92,11 @@ class MatContinuous: Mat2d<T> {
   MatContinuous() = default;
   virtual ~MatContinuous() = default;
 
-  virtual value_type operator()(const Pos<2>& pos) const = 0;
+  virtual const value_type& operator()(size_t x, size_t y) const = 0;
+
+  virtual value_type& operator()(size_t x, size_t y) = 0;
+
+  IterType operator[](size_t) const = 0;
 
   virtual size_t Size() const noexcept = 0;
 
@@ -164,11 +177,11 @@ class MatDiscontinuous: Mat2d<T> {
   MatDiscontinuous() = default;
   virtual ~MatDiscontinuous() = default;
 
-  virtual T operator()(const Pos<2>& pos) const = 0;
+  virtual const value_type& operator()(size_t x, size_t y) const = 0;
 
-  virtual const IterType& operator[](size_t) const = 0;
+  virtual value_type& operator()(size_t x, size_t y) = 0;
 
-  virtual IterType& operator[](size_t) = 0;
+  IterType operator[](size_t) const = 0;
 
   virtual size_t Size() const noexcept = 0;
 
@@ -252,7 +265,9 @@ class DataBase: Mat2d<T> {
   DataBase() = default;
   virtual ~DataBase() = default;
 
-  virtual T operator()(const Pos<2>& pos) const = 0;
+  virtual const value_type& operator()(size_t x, size_t y) const = 0;
+
+  virtual value_type& operator()(size_t x, size_t y) = 0;
 
   virtual size_t NumElements() const = 0;
 

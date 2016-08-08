@@ -214,7 +214,7 @@ class TriangularMat: public MatDiscontinuous<T, TriangularMat<T>,
     return slice;
   }
 
-  T& Element(size_t x, size_t y) noexcept {
+  const T& Element(size_t x, size_t y) const noexcept {
     // If the client gives x > 0, the element is always 0
     // so, this operation is like a mirror operation on matrix
     // [[1 1 2 3]
@@ -237,11 +237,11 @@ class TriangularMat: public MatDiscontinuous<T, TriangularMat<T>,
     return elems_[i];
   }
 
-  T& operator()(size_t x, size_t y) noexcept {
-    return Element(x, y);
+  T& operator()(size_t x, size_t y) override {
+    return const_cast<T&>(Element(x, y));
   }
 
-  const T& operator()(size_t x, size_t y) const noexcept {
+  const T& operator()(size_t x, size_t y) const override {
     return Element(x, y);
   }
 

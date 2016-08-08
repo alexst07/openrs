@@ -29,14 +29,14 @@ class DataRatingTest : public ::testing::Test {
 TYPED_TEST_CASE_P(DataRatingTest);
 
 TYPED_TEST_P(DataRatingTest, Access) {
-  auto v = this->mat_({2,3});
+  auto v = this->mat_(2,3);
   ASSERT_FLOAT_EQ(0.7, v);
 
-  v = this->mat_({3,4});
+  v = this->mat_(3,4);
   ASSERT_FLOAT_EQ(0, v);
 
-  ASSERT_THROW(this->mat_({43,4}), erised::Exception);
-  ASSERT_THROW(this->mat_({4,40}), erised::Exception);
+  ASSERT_THROW(this->mat_(43,4), erised::Exception);
+  ASSERT_THROW(this->mat_(4,40), erised::Exception);
 }
 
 TYPED_TEST_P(DataRatingTest, MinMaxSingle) {
@@ -149,13 +149,13 @@ TYPED_TEST_P(DataRatingTest, AssignMove) {
   mat2 = std::move(mat1);
   mat3 = mat2;
 
-  auto v = mat2({2,3});
+  auto v = mat2(2,3);
   ASSERT_FLOAT_EQ(0.7, v);
 
-  v = mat2({3,4});
+  v = mat2(3,4);
   ASSERT_FLOAT_EQ(0, v);
 
-  v = mat3({2,3});
+  v = mat3(2,3);
   ASSERT_FLOAT_EQ(0.7, v);
 }
 
@@ -168,13 +168,13 @@ TYPED_TEST_P(DataRatingTest, MapRows) {
     return i*v;
   });
 
-  auto v = mat1({1,1});
+  auto v = mat1(1,1);
   ASSERT_FLOAT_EQ(0.8, v);
 
-  v = mat1({2,3});
+  v = mat1(2,3);
   ASSERT_FLOAT_EQ(1.4, v);
 
-  v = mat1({5,6});
+  v = mat1(5,6);
   ASSERT_FLOAT_EQ(1.5, v);
 }
 
@@ -187,13 +187,13 @@ TYPED_TEST_P(DataRatingTest, MapCols) {
     return i*v;
   });
 
-  auto v = mat1({1,1});
+  auto v = mat1(1,1);
   ASSERT_FLOAT_EQ(0.8, v);
 
-  v = mat1({2,3});
+  v = mat1(2,3);
   ASSERT_FLOAT_EQ(2.1, v);
 
-  v = mat1({5,6});
+  v = mat1(5,6);
   ASSERT_FLOAT_EQ(1.8, v);
 }
 

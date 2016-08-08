@@ -16,161 +16,161 @@
 
 namespace erised {
 
-template<class Sim>
-class NeighborsBase {
- public:
-  using value_type = typename Sim::value_type;
-
-  template<class T>
-  using Mat = typename std::vector<std::vector<T>>;
-
-  NeighborsBase(Sim& sim, size_t n): sim_(sim), n_(n) {}
-
-  virtual ~NeighborsBase() = default;
-
-  Mat<value_type> Neighbors() const noexcept = 0;
-
-  virtual const Mat<size_t>& Indexes() const noexcept = 0;
-
-  virtual std::vector<value_type> Neighbors(size_t) const noexcept = 0;
-
-  virtual std::vector<size_t> Indexes(size_t) const noexcept = 0;
-
- protected:
-  Sim& sim_;
-  size_t n_;
-};
-
-template<class Sim>
-class Neighbors: public NeighborsBase<Sim> {
- public:
-  using value_type = typename Sim::value_type;
-
-
-  template<class T>
-  using Mat = typename NeighborsBase<Sim>::Mat<T>;
-
-  Neighbors(Sim& sim, size_t n, const IndexParams& iparams,
-            const SearchParams& sparams)
-      : NeighborsBase(sim, n) {
-
-  }
-
-  virtual ~Neighbors() = default;
-
-  Mat<value_type> Neighbors() const noexcept override {
-
-  }
-
-  const Mat<value_type>& Distances() const noexcept {
-
-  }
-
-  const Mat<size_t>& Indexes() const noexcept override {
-
-  }
-
-  const Mat<value_type>& Distances(size_t i) const noexcept {
-
-  }
-
-  virtual std::vector<value_type> Neighbors(size_t i) const noexcept override {
-
-  }
-
-  virtual std::vector<size_t> Indexes(size_t i) const noexcept override {
-
-  }
-};
-
-template<>
-template<class T, class Alloc>
-class Neighbors<flann::SimMat<T, Alloc>>
-    : public NeighborsBase<flann::SimMat<T, Alloc>> {
- public:
-  using value_type = typename flann::SimMat<T, Alloc>::value_type;
-  using Sim = typename flann::SimMat<T, Alloc>;
-
-  template<class T>
-  using Mat = typename NeighborsBase<flann::SimMat<T, Alloc>>::Mat<T>;
-
-  Neighbors(Sim& sim, size_t n, const IndexParams& iparams,
-            const SearchParams& sparams)
-      : NeighborsBase(sim, n)
-      , indices_(this->sim_.Rows(), n)
-      , dists_(this->sim_.Rows(), n) {
-    size_t num_rows = sim.Rows();
-    size_t num_cols = sim.Cols();
-
-    for (size_t i = 0; i < num_rows; i++) {
-      // Gets num_cols elements from sim[num_cols*i]
-      flann::Mat<value_type, Alloc> row(sim.Data + num_cols*i, num_cols);
-
-      flann::Index<L2<float>> index(this->sim_, iparams);
-      index.BuildIndex();
-      index.KnnSearch(row, const_cast<flann::Mat<size_t>>(indices_[i]),
-                      const_cast<flann::Mat<T, Alloc>>(dists_[i]), n, sparams);
-    }
-  }
-
-  virtual ~Neighbors() = default;
-
-  Mat<value_type> Neighbors() const noexcept override {
-    Mat<value_type> mat(indices_.size());
-
-    // TODO: Change this for to parallel_for
-    size_t row = 0;
-    for (const auto& indices: indices_) {
-      std::vector<value_type> vec(this->n_);
-
-      for (const auto& indice: indices) {
-        vec.insert(sim_(indice, row));
-      }
-
-      mat.insert(std::move(vec));
-
-      row++;
-    }
-  }
-
-  const Mat<value_type>& Distances() const noexcept {
-    value_type* data = indices_.Data();
-    std::vector<value_type> vec(data, indices_.size());
-    return vec;
-  }
-
-  const Mat<size_t>& Indexes() const noexcept override {
-    return indices_;
-  }
-
-  const Mat<value_type>& Distances(size_t i) const noexcept {
-    value_type* data = dists_[i].Data();
-    std::vector<value_type> vec(data, indices_.size());
-    return vec;
-  }
-
-  virtual std::vector<value_type> Neighbors(size_t i) const noexcept override {
-    size_t row = 0;
-    auto indices = indices_[i];
-    std::vector<value_type> vec(this->n_);
-
-    for (const auto& indice: indices) {
-      vec.insert(sim_(indice, i));
-    }
-
-    return vec;
-  }
-
-  virtual std::vector<size_t> Indexes(size_t i) const noexcept override {
-    value_type* data = indices_[i].Data();
-    std::vector<value_type> vec(data, indices_.size());
-    return vec;
-  }
-
- private:
-  std::vector<flann::Mat<size_t>> indices_;
-  std::vector<flann::Mat<T, Alloc>> dists_;
-};
+// template<class Sim>
+// class NeighborsBase {
+//  public:
+//   using value_type = typename Sim::value_type;
+//
+//   template<class T>
+//   using Mat = typename std::vector<std::vector<T>>;
+//
+//   NeighborsBase(Sim& sim, size_t n): sim_(sim), n_(n) {}
+//
+//   virtual ~NeighborsBase() = default;
+//
+//   Mat<value_type> Neighbors() const noexcept = 0;
+//
+//   virtual const Mat<size_t>& Indexes() const noexcept = 0;
+//
+//   virtual std::vector<value_type> Neighbors(size_t) const noexcept = 0;
+//
+//   virtual std::vector<size_t> Indexes(size_t) const noexcept = 0;
+//
+//  protected:
+//   Sim& sim_;
+//   size_t n_;
+// };
+//
+// template<class Sim>
+// class Neighbors: public NeighborsBase<Sim> {
+//  public:
+//   using value_type = typename Sim::value_type;
+//
+//
+//   template<class T>
+//   using Mat = typename NeighborsBase<Sim>::Mat<T>;
+//
+//   Neighbors(Sim& sim, size_t n, const IndexParams& iparams,
+//             const SearchParams& sparams)
+//       : NeighborsBase(sim, n) {
+//
+//   }
+//
+//   virtual ~Neighbors() = default;
+//
+//   Mat<value_type> Neighbors() const noexcept override {
+//
+//   }
+//
+//   const Mat<value_type>& Distances() const noexcept {
+//
+//   }
+//
+//   const Mat<size_t>& Indexes() const noexcept override {
+//
+//   }
+//
+//   const Mat<value_type>& Distances(size_t i) const noexcept {
+//
+//   }
+//
+//   virtual std::vector<value_type> Neighbors(size_t i) const noexcept override {
+//
+//   }
+//
+//   virtual std::vector<size_t> Indexes(size_t i) const noexcept override {
+//
+//   }
+// };
+//
+// template<>
+// template<class T, class Alloc>
+// class Neighbors<flann::SimMat<T, Alloc>>
+//     : public NeighborsBase<flann::SimMat<T, Alloc>> {
+//  public:
+//   using value_type = typename flann::SimMat<T, Alloc>::value_type;
+//   using Sim = typename flann::SimMat<T, Alloc>;
+//
+//   template<class T>
+//   using Mat = typename NeighborsBase<flann::SimMat<T, Alloc>>::Mat<T>;
+//
+//   Neighbors(Sim& sim, size_t n, const IndexParams& iparams,
+//             const SearchParams& sparams)
+//       : NeighborsBase(sim, n)
+//       , indices_(this->sim_.Rows(), n)
+//       , dists_(this->sim_.Rows(), n) {
+//     size_t num_rows = sim.Rows();
+//     size_t num_cols = sim.Cols();
+//
+//     for (size_t i = 0; i < num_rows; i++) {
+//       // Gets num_cols elements from sim[num_cols*i]
+//       flann::Mat<value_type, Alloc> row(sim.Data + num_cols*i, num_cols);
+//
+//       flann::Index<L2<float>> index(this->sim_, iparams);
+//       index.BuildIndex();
+//       index.KnnSearch(row, const_cast<flann::Mat<size_t>>(indices_[i]),
+//                       const_cast<flann::Mat<T, Alloc>>(dists_[i]), n, sparams);
+//     }
+//   }
+//
+//   virtual ~Neighbors() = default;
+//
+//   Mat<value_type> Neighbors() const noexcept override {
+//     Mat<value_type> mat(indices_.size());
+//
+//     // TODO: Change this for to parallel_for
+//     size_t row = 0;
+//     for (const auto& indices: indices_) {
+//       std::vector<value_type> vec(this->n_);
+//
+//       for (const auto& indice: indices) {
+//         vec.insert(sim_(indice, row));
+//       }
+//
+//       mat.insert(std::move(vec));
+//
+//       row++;
+//     }
+//   }
+//
+//   const Mat<value_type>& Distances() const noexcept {
+//     value_type* data = indices_.Data();
+//     std::vector<value_type> vec(data, indices_.size());
+//     return vec;
+//   }
+//
+//   const Mat<size_t>& Indexes() const noexcept override {
+//     return indices_;
+//   }
+//
+//   const Mat<value_type>& Distances(size_t i) const noexcept {
+//     value_type* data = dists_[i].Data();
+//     std::vector<value_type> vec(data, indices_.size());
+//     return vec;
+//   }
+//
+//   virtual std::vector<value_type> Neighbors(size_t i) const noexcept override {
+//     size_t row = 0;
+//     auto indices = indices_[i];
+//     std::vector<value_type> vec(this->n_);
+//
+//     for (const auto& indice: indices) {
+//       vec.insert(sim_(indice, i));
+//     }
+//
+//     return vec;
+//   }
+//
+//   virtual std::vector<size_t> Indexes(size_t i) const noexcept override {
+//     value_type* data = indices_[i].Data();
+//     std::vector<value_type> vec(data, indices_.size());
+//     return vec;
+//   }
+//
+//  private:
+//   std::vector<flann::Mat<size_t>> indices_;
+//   std::vector<flann::Mat<T, Alloc>> dists_;
+// };
 
 template<class Data, class Sim>
 class Correlation {
@@ -269,12 +269,12 @@ class Correlation {
 
 template<class Data, class Sim>
 class Pearson: public Correlation<Data, Sim> {
-  Pearson(): Correlation(Axis::ROW) {}
+  Pearson(): Correlation<Data, Sim>(Axis::ROW) {}
 };
 
 template<class Data, class Sim>
 class CossineAdjusted: public Correlation<Data, Sim> {
-  CossineAdjusted(): Correlation(Axis::COL) {}
+  CossineAdjusted(): Correlation<Data, Sim>(Axis::COL) {}
 };
 // template<
 //   class T,
