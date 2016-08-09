@@ -85,7 +85,7 @@ class Mat2d: public MatBase<T, 2> {
 };
 
 template<typename T>
-class Vec: MatBase<T, 1> {
+class Vec: public MatBase<T, 1> {
  public:
   using value_type = T;
     static constexpr size_t order = MatBase<T, 1>::order;
@@ -111,7 +111,7 @@ class Vec: MatBase<T, 1> {
 // has a member value_type* Data() that return a pointer to internal
 // data
 template<typename T>
-class VecContinuous: Vec<T> {
+class VecContinuous: public Vec<T> {
 
  protected:
   // Iterator class
@@ -194,7 +194,7 @@ class VecContinuous: Vec<T> {
 };
 
 template<class T, class Derived>
-class VecDiscontinuous: Vec<T> {
+class VecDiscontinuous: public Vec<T> {
 
  protected:
   // Iterator class
@@ -312,11 +312,11 @@ class MatIter: Mat2d<T> {
 
   // operator[] on matrix must return i row or the i col
   // using some appropriated derivated vec class
-  virtual IterType operator[](size_t i) = 0;
+  virtual value_type& operator[](size_t i) = 0;
 
   // Size must the the numbers of iterator step, for example
   // usually the number of rows
-  virtual size_t Size() const noexcept = 0;
+  virtual size_t SizeIter() const noexcept = 0;
 
   iterator begin() noexcept {
     return iterator(static_cast<Derived&>(*this), static_cast<size_t>(0));
@@ -327,11 +327,11 @@ class MatIter: Mat2d<T> {
   }
 
   iterator end() noexcept {
-    return iterator(static_cast<Derived&>(*this), Size());
+    return iterator(static_cast<Derived&>(*this), SizeIter());
   }
 
   const_iterator end() const noexcept {
-    return const_iterator(static_cast<Derived&>(*this), Size());
+    return const_iterator(static_cast<Derived&>(*this), SizeIter());
   }
 
  protected:
@@ -377,7 +377,7 @@ class MatIter: Mat2d<T> {
 
     void increment() { ++pos_; }
 
-    IterType dereference() const { return ref_[pos_]; }
+    value_type& dereference() const { return ref_[pos_]; }
 
     Ref& ref_;
     size_t pos_;

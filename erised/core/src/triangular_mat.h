@@ -175,11 +175,16 @@ class TriangularMat: public MatIter<T, TriangularMat<T>,
     return Element(x, y);
   }
 
-  TriangularMatAxisRef<T> operator[](size_t i) {
-    return Row(i);
+  T& operator[](size_t i) {
+    return this->operator()(static_cast<size_t>(i/size_),
+                            static_cast<size_t>(i%size_));
   }
 
-  size_t Size() const noexcept override {
+  size_t Size() const noexcept {
+    return size_;
+  }
+
+  size_t SizeIter() const noexcept override {
     return size_;
   }
 

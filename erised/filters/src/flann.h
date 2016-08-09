@@ -9,6 +9,7 @@
 #include <flann/flann.hpp>
 
 #include "exception.h"
+#include "data_base.h"
 
 namespace erised { namespace flann {
 
@@ -16,32 +17,78 @@ template<class T, class Alloc = std::allocator<T>>
 class Mat;
 
 template<class T, class Alloc = std::allocator<T>>
-class SimMatRef {
- friend class Mat<T, Alloc>;
+class MatRef: public VecContinuous<T> {
+
+  friend class Mat<T, Alloc>;
+
  public:
-  SimMatRef(const SimMatRef& mr);
-  SimMatRef(SimMatRef&& mr);
+  using value_type = T;
 
-  SimMatRef<T>& operator=(const SimMatRef<T>& mr);
-  SimMatRef<T>& operator=(SimMatRef<T>&& mr);
+  MatRef(const MatRef& mr)
+    : ptr_(mr.ptr_), size_(mr.size_), step_(mr.step_) {}
 
-  T& operator[](size_t);
-  const T& operator[](size_t) const;
+  MatRef(MatRef&& mr)
+    : ptr_(mr.ptr_), size_(mr.size_), step_(mr.step_) {
+    mr.ptr_ = nullptr;
+    mr.size_ = 0;
+  }
+
+  MatRef<T>& operator=(const MatRef<T>& mr) {
+    ptr_ = mr.ptr_;
+    size_ = mr.size_;
+    step_ = mr.step_;
+  }
+
+  MatRef<T>& operator=(MatRef<T>&& mr) {
+    ptr_ = mr.ptr_;
+    size_ = mr.size_;
+    step_ = mr.step_;
+
+    mr.ptr_ = nullptr;
+    mr.size_ = 0;
+  }
+
+  value_type& operator[](size_t i) override {
+    return ptr_[i*step_];
+  }
+
+  const value_type& operator[](size_t i) const override {
+    return ptr_[i*step_];
+  }
+
+  size_t Size() const noexcept override {
+    return size_;
+  }
+
+  value_type* Data() noexcept override {
+    return ptr_;
+  }
+
+  const value_type* Data() const noexcept override {
+    return ptr_;
+  }
 
  private:
-  SimMatRef(T* ptr, size_t step);
+  MatRef(T* ptr, size_t size, size_t step = 1)
+    : ptr_(ptr)
+    , size_(size)
+    , step_(step) {}
+
   T* ptr_;
+  size_t size_;
   size_t step_;
 };
 
 template<class T, class Alloc>
-class Mat: protected ::flann::Matrix<T> {
+class Mat: protected ::flann::Matrix<T>,
+public MatIter<T, Mat<T, Alloc>, MatRef<T, Alloc>>{
  public:
   static constexpr bool continuous = true;
 
   using value_type = T;
   using iterator = typename std::vector<T>::iterator;
   using const_iterator = typename std::vector<T>::const_iterator;
+  using IterType = MatRef<T, Alloc>;
 
   inline Mat(): row_size_(0), col_size_(0), delete_(false) {}
 
@@ -148,19 +195,20 @@ class Mat: protected ::flann::Matrix<T> {
       delete this->data;
   }
 
+  // set value to position (x,y)
   virtual void operator()(T value, size_t x, size_t y) {
     reinterpret_cast<T*>(this->data)[col_size_*x + y] = value;
   }
 
-  T& operator()(size_t x, size_t y) {
+  virtual const value_type& operator()(size_t x, size_t y) const {
     return reinterpret_cast<T*>(this->data)[col_size_*x + y];
   }
 
-  inline const T& operator()(size_t x, size_t y) const {
+  virtual value_type& operator()(size_t x, size_t y) {
     return reinterpret_cast<T*>(this->data)[col_size_*x + y];
   }
 
-  inline const T* Data() const noexcept {
+  inline const value_type* Data() const noexcept {
     return this->data;
   }
 
@@ -172,6 +220,14 @@ class Mat: protected ::flann::Matrix<T> {
     return Size();
   }
 
+  virtual value_type& operator[](size_t i) {
+    return this->operator()(i/this->col_size_, i%this->row_size_);
+  }
+
+  virtual size_t SizeIter() const noexcept {
+    return Rows();
+  }
+
   inline size_t Rows() const noexcept {
     return this->row_size_;
   }
@@ -181,7 +237,7 @@ class Mat: protected ::flann::Matrix<T> {
   }
 
   inline T* Data() noexcept {
-    return this->data;
+    return reinterpret_cast<T*>(this->data);
   }
 
   inline size_t Capacity() const noexcept {

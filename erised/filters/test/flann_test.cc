@@ -21,6 +21,17 @@ TEST(Sample, MoveSim) {
   std::cout << sim2;
 }
 
+TEST(Sample, LoopMat) {
+  using namespace erised::flann;
+
+  std::vector<float> datav = {1, 2, 3, 1, 2, 3, 4, 3, 4, 5};
+  Mat<float> data(datav.data(), 5, 2);
+
+  for (const auto e: data) {
+      std::cout << e << " ";
+  }
+}
+
 TEST(Sample, Sampleunit) {
 //   using namespace erised::flann;
 //   size_t nn = 3;
