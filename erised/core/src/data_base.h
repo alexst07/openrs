@@ -34,6 +34,7 @@ class Pos<2> {
   size_t x_, y_;
 };
 
+template<>
 class Pos<1> {
  public:
   Pos(size_t i): i_(i) {}
@@ -95,10 +96,22 @@ class Vec: MatBase<T, 1> {
   virtual value_type& operator[](size_t i) = 0;
 
   virtual const value_type& operator[](size_t i) const = 0;
+
+  virtual value_type& operator()(const Pos<1>& pos) {
+    return this->operator[](pos());
+  }
+
+  virtual const value_type& operator()(const Pos<1>& pos) const {
+    return this->operator[](pos());
+  }
 };
 
-template<typename T, class Derived, class IterType>
-class MatContinuous: Mat2d<T> {
+// VecContinuous is a vector that is possible go through in memory
+// by a loop and pointer arithmetic, and all VecContinuous object
+// has a member value_type* Data() that return a pointer to internal
+// data
+template<typename T>
+class VecContinuous: Vec<T> {
 
  protected:
   // Iterator class
@@ -107,18 +120,18 @@ class MatContinuous: Mat2d<T> {
 
  public:
   using value_type = T;
-  using iter_type = IterType;
+  using iter_type = value_type;
   typedef Iter<iter_type> iterator;
   typedef Iter<iter_type const> const_iterator;
 
   static constexpr size_t order = MatBase<T, 2>::order;
 
-  MatContinuous() = default;
-  virtual ~MatContinuous() = default;
+  VecContinuous() = default;
+  virtual ~VecContinuous() = default;
 
-  virtual const value_type& operator()(size_t x, size_t y) const = 0;
+  virtual value_type& operator[](size_t i) = 0;
 
-  virtual value_type& operator()(size_t x, size_t y) = 0;
+  virtual const value_type& operator[](size_t i) const = 0;
 
   virtual size_t Size() const noexcept = 0;
 
@@ -153,7 +166,6 @@ class MatContinuous: Mat2d<T> {
 
    public:
     Iter(Value* p): p_(p) {}
-    Iter(Value* p, size_t pos): p_(p) {}
 
     // make Iter's converting constructor disappear
     // when the ref_ conversion would fail
@@ -181,8 +193,8 @@ class MatContinuous: Mat2d<T> {
   };
 };
 
-template<class T, class Derived, class IterType>
-class MatDiscontinuous: Mat2d<T> {
+template<class T, class Derived>
+class VecDiscontinuous: Vec<T> {
 
  protected:
   // Iterator class
@@ -196,33 +208,35 @@ class MatDiscontinuous: Mat2d<T> {
 
   static constexpr size_t order = MatBase<T, 2>::order;
 
-  MatDiscontinuous() = default;
-  virtual ~MatDiscontinuous() = default;
+  VecDiscontinuous() = default;
+  virtual ~VecDiscontinuous() = default;
 
-  virtual const value_type& operator()(size_t x, size_t y) const = 0;
+  virtual value_type& operator[](size_t i) = 0;
 
-  virtual value_type& operator()(size_t x, size_t y) = 0;
+  virtual const value_type& operator[](size_t i) const = 0;
 
+  // Size must the the numbers of iterator step, for example
+  // usually the number of rows
   virtual size_t Size() const noexcept = 0;
 
   iterator begin() noexcept {
-    return iterator(*this, static_cast<size_t>(0));
+    return iterator(static_cast<Derived&>(*this), static_cast<size_t>(0));
   }
 
   const_iterator begin() const noexcept {
-    return const_iterator(static_cast<Derived>(*this), 0);
+    return const_iterator(static_cast<Derived&>(*this), 0);
   }
 
   iterator end() noexcept {
-    return iterator(static_cast<Derived>(*this), Size());
+    return iterator(static_cast<Derived&>(*this), Size());
   }
 
   const_iterator end() const noexcept {
-    return const_iterator(static_cast<Derived>(*this), Size());
+    return const_iterator(static_cast<Derived&>(*this), Size());
   }
 
  protected:
-    /**
+  /**
    * @class Iter
    * @brief Iterator class for MatDiscontinuous
    *
@@ -264,7 +278,106 @@ class MatDiscontinuous: Mat2d<T> {
 
     void increment() { ++pos_; }
 
-    typename Derived::iter_type& dereference() const { return ref_[pos_]; }
+    value_type& dereference() const { return ref_[pos_]; }
+
+    Ref& ref_;
+    size_t pos_;
+  };
+
+};
+
+
+// MatIter model a matrix with iterator
+template<class T, class Derived, class IterType>
+class MatIter: Mat2d<T> {
+
+ protected:
+  // Iterator class
+  template <class Ref>
+  class Iter;
+
+ public:
+  using value_type = T;
+  typedef Iter<Derived> iterator;
+  typedef Iter<Derived const> const_iterator;
+
+  static constexpr size_t order = MatBase<T, 2>::order;
+
+  MatIter() = default;
+  virtual ~MatIter() = default;
+
+  virtual const value_type& operator()(size_t x, size_t y) const = 0;
+
+  virtual value_type& operator()(size_t x, size_t y) = 0;
+
+  // operator[] on matrix must return i row or the i col
+  // using some appropriated derivated vec class
+  virtual IterType operator[](size_t i) = 0;
+
+  // Size must the the numbers of iterator step, for example
+  // usually the number of rows
+  virtual size_t Size() const noexcept = 0;
+
+  iterator begin() noexcept {
+    return iterator(static_cast<Derived&>(*this), static_cast<size_t>(0));
+  }
+
+  const_iterator begin() const noexcept {
+    return const_iterator(static_cast<Derived&>(*this), 0);
+  }
+
+  iterator end() noexcept {
+    return iterator(static_cast<Derived&>(*this), Size());
+  }
+
+  const_iterator end() const noexcept {
+    return const_iterator(static_cast<Derived&>(*this), Size());
+  }
+
+ protected:
+  /**
+   * @class Iter
+   * @brief Iterator class for MatDiscontinuous
+   *
+   * Different from others iterators where the pointer
+   * is used, on this case, the data isn't continuous
+   * so, only the derivated class from MatDiscontinuous
+   * knows to access the elements in the correct order,
+   * the other solution is use functional program to
+   * say to Iter how to iterate over data
+   */
+  template <class Ref>
+  class Iter
+    : public boost::iterator_facade<Iter<Ref>
+        , T
+        , boost::forward_traversal_tag> {
+    struct enabler {};
+
+   public:
+    Iter(Ref& ref): ref_(ref), pos_(0) {}
+    Iter(Ref& ref, size_t pos): ref_(ref), pos_(pos) {}
+
+    // make Iter's converting constructor disappear
+    // when the ref_ conversion would fail
+    template <class OtherRef>
+    Iter(
+      Iter<OtherRef> const& other
+      , typename boost::enable_if<
+          boost::is_convertible<OtherRef*,Ref*>
+        , enabler
+      >::type = enabler()
+    ) : ref_(other.ref_) {}
+
+   private:
+    friend class boost::iterator_core_access;
+
+    bool equal(Iter<Ref> const& other) const {
+      return this->pos_ == other.pos_;
+    }
+
+    void increment() { ++pos_; }
+
+    IterType dereference() const { return ref_[pos_]; }
 
     Ref& ref_;
     size_t pos_;

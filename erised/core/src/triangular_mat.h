@@ -18,7 +18,9 @@ template<typename T>
 class TriangularMat;
 
 template<typename T>
-class TriangularMatAxisRef: MatDiscontinuous<T, TriangularMatAxisRef<T>, T> {
+class TriangularMatAxisRef:
+    public VecDiscontinuous<T, TriangularMatAxisRef<T>> {
+
   friend class TriangularMat<T>;
 
  public:
@@ -61,12 +63,11 @@ constexpr size_t TriangularMatElems(size_t size) {
  *
  */
 template<typename T>
-class TriangularMat: public MatDiscontinuous<T, TriangularMat<T>,
-    TriangularMatAxisRef<T>> {
+class TriangularMat: public MatIter<T, TriangularMat<T>,
+                                    TriangularMatAxisRef<T>> {
 
  public:
-  using Base = MatDiscontinuous<T, TriangularMat<T>, TriangularMatAxisRef<T>>;
-  using iter_type = TriangularMatAxisRef<T>;
+  using Base = MatIter<T, TriangularMat<T>, TriangularMatAxisRef<T>>;
 
   TriangularMat(): elems_(0), size_(0), unit_(static_cast<T>(1)) {}
 
@@ -172,6 +173,10 @@ class TriangularMat: public MatDiscontinuous<T, TriangularMat<T>,
 
   const T& operator()(size_t x, size_t y) const override {
     return Element(x, y);
+  }
+
+  TriangularMatAxisRef<T> operator[](size_t i) {
+    return Row(i);
   }
 
   size_t Size() const noexcept override {
