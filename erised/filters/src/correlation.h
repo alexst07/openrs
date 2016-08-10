@@ -16,89 +16,117 @@
 
 namespace erised {
 
-// template<class Sim>
-// class NeighborsBase {
+template<class MatIn, template <typename, template<typename> class> class Mat>
+class NeighborsBase {
+ public:
+  using value_type = typename MatIn::value_type;
+  using MatNeighbors = Mat<value_type, MatIn::template alloc>;
+  using MatIndexes = Mat<size_t, MatIn::template alloc>;
+
+  NeighborsBase(MatIn& mat, size_t n): mat_(mat), n_(n) {}
+
+  virtual ~NeighborsBase() = default;
+
+  virtual const MatNeighbors& Neighbors() const noexcept = 0;
+
+  virtual const MatIndexes& Indexes() const noexcept = 0;
+
+  virtual MatNeighbors& Neighbors() noexcept = 0;
+
+  virtual MatIndexes& Indexes() noexcept = 0;
+
+  virtual typename MatNeighbors::Row Neighbors(size_t) noexcept = 0;
+
+  virtual typename MatIndexes::Row Indexes(size_t) noexcept = 0;
+
+ protected:
+  MatIn& mat_;
+  size_t n_;
+};
+
+// template<class MatIn, class MatNeighbors, class MatIndexes>
+// class NeighborsKnn {
 //  public:
-//   using value_type = typename Sim::value_type;
-//
-//   template<class T>
-//   using Mat = typename std::vector<std::vector<T>>;
-//
-//   NeighborsBase(Sim& sim, size_t n): sim_(sim), n_(n) {}
+//   NeighborsBase(MatIn& mat, size_t n): mat_(mat), n_(n) {}
 //
 //   virtual ~NeighborsBase() = default;
 //
-//   Mat<value_type> Neighbors() const noexcept = 0;
+//   virtual const MatNeighbors& Neighbors() const noexcept = 0;
 //
-//   virtual const Mat<size_t>& Indexes() const noexcept = 0;
+//   virtual const MatIndexes& Indexes() const noexcept = 0;
 //
-//   virtual std::vector<value_type> Neighbors(size_t) const noexcept = 0;
+//   virtual MatNeighbors& Neighbors() noexcept = 0;
 //
-//   virtual std::vector<size_t> Indexes(size_t) const noexcept = 0;
+//   virtual MatIndexes& Indexes() noexcept = 0;
+//
+//   virtual typename MatNeighbors::Row Neighbors(size_t) noexcept = 0;
+//
+//   virtual typename MatIndexes::Row Indexes(size_t) noexcept = 0;
 //
 //  protected:
-//   Sim& sim_;
+//   MatIn& mat_;
 //   size_t n_;
 // };
-//
+
+template<class Sim>
+class Knn: public NeighborsBase<Sim, flann::Mat> {
+ public:
+  using value_type = typename Sim::value_type;
+  using Base = NeighborsBase<Sim, flann::Mat>;
+  using Mat = flann::Mat<typename Sim::value_type, Sim::template alloc>;
+  using MatSizet = flann::Mat<size_t, Sim::template alloc>;
+
+  Knn(Sim& sim, size_t n): Base(sim, n) {
+
+  }
+
+  virtual ~Knn() = default;
+
+  Mat& Neighbors() noexcept override {
+
+  }
+
+  const Mat& Neighbors() const noexcept override {
+
+  }
+
+  const MatSizet& Indexes() const noexcept override {
+
+  }
+
+  MatSizet& Indexes() noexcept override {
+
+  }
+
+  typename Mat::Row Neighbors(size_t) noexcept override {
+
+  }
+
+  typename MatSizet::Row Indexes(size_t) noexcept override {
+
+  }
+};
+
+
+
 // template<class Sim>
-// class Neighbors: public NeighborsBase<Sim> {
-//  public:
-//   using value_type = typename Sim::value_type;
+// class Knn: public NeighborsBase<Sim, flann::Mat<typename Sim::value_type,
+//     typename Sim::alloc<typename Sim::value_type>>> {
 //
-//
-//   template<class T>
-//   using Mat = typename NeighborsBase<Sim>::Mat<T>;
-//
-//   Neighbors(Sim& sim, size_t n, const IndexParams& iparams,
-//             const SearchParams& sparams)
-//       : NeighborsBase(sim, n) {
-//
-//   }
-//
-//   virtual ~Neighbors() = default;
-//
-//   Mat<value_type> Neighbors() const noexcept override {
-//
-//   }
-//
-//   const Mat<value_type>& Distances() const noexcept {
-//
-//   }
-//
-//   const Mat<size_t>& Indexes() const noexcept override {
-//
-//   }
-//
-//   const Mat<value_type>& Distances(size_t i) const noexcept {
-//
-//   }
-//
-//   virtual std::vector<value_type> Neighbors(size_t i) const noexcept override {
-//
-//   }
-//
-//   virtual std::vector<size_t> Indexes(size_t i) const noexcept override {
-//
-//   }
-// };
-//
-// template<>
-// template<class T, class Alloc>
-// class Neighbors<flann::SimMat<T, Alloc>>
-//     : public NeighborsBase<flann::SimMat<T, Alloc>> {
 //  public:
 //   using value_type = typename flann::SimMat<T, Alloc>::value_type;
+//   using Base = NeighborsBase<flann::SimMat<T, Alloc>, flann::Mat>;
 //   using Sim = typename flann::SimMat<T, Alloc>;
+//   using MatIn = flann::SimMat<T, Alloc>;
+//   using MatNeighbors = flann::Mat<T, Alloc>;
+//   using MatIndexes = flann::Mat<size_t, Alloc>;
 //
-//   template<class T>
-//   using Mat = typename NeighborsBase<flann::SimMat<T, Alloc>>::Mat<T>;
-//
-//   Neighbors(Sim& sim, size_t n, const IndexParams& iparams,
-//             const SearchParams& sparams)
-//       : NeighborsBase(sim, n)
-//       , indices_(this->sim_.Rows(), n)
-//       , dists_(this->sim_.Rows(), n) {
+//   Knn(Sim& sim, size_t n, const flann::IndexParams& iparams,
+//       const flann::SearchParams& sparams)
+//     : Base(sim, n)
+//     , neighbors_(this->sim_.Rows(), n)
+//     , indices_(this->sim_.Rows(), n)
+//     , dists_(this->sim_.Rows(), n) {
 //     size_t num_rows = sim.Rows();
 //     size_t num_cols = sim.Cols();
 //
@@ -106,70 +134,62 @@ namespace erised {
 //       // Gets num_cols elements from sim[num_cols*i]
 //       flann::Mat<value_type, Alloc> row(sim.Data + num_cols*i, num_cols);
 //
-//       flann::Index<L2<float>> index(this->sim_, iparams);
+//       flann::Index<flann::L2<value_type>> index(this->sim_, iparams);
+//
 //       index.BuildIndex();
-//       index.KnnSearch(row, const_cast<flann::Mat<size_t>>(indices_[i]),
-//                       const_cast<flann::Mat<T, Alloc>>(dists_[i]), n, sparams);
+//
+//       // Writes in each row from matrix indices_ and dists_
+//       index.KnnSearch(row, const_cast<flann::Mat<size_t>>(indices_.Row(i).Data()),
+//                       const_cast<flann::Mat<T, Alloc>>(dists_.Row(i).Data()), n, sparams);
 //     }
+//
+//     CalcNeighbors();
 //   }
 //
-//   virtual ~Neighbors() = default;
+//   virtual ~Knn() = default;
 //
-//   Mat<value_type> Neighbors() const noexcept override {
-//     Mat<value_type> mat(indices_.size());
-//
-//     // TODO: Change this for to parallel_for
-//     size_t row = 0;
-//     for (const auto& indices: indices_) {
-//       std::vector<value_type> vec(this->n_);
-//
-//       for (const auto& indice: indices) {
-//         vec.insert(sim_(indice, row));
-//       }
-//
-//       mat.insert(std::move(vec));
-//
-//       row++;
-//     }
+//   virtual const MatNeighbors& Neighbors() const noexcept {
+//     return neighbors_;
 //   }
 //
-//   const Mat<value_type>& Distances() const noexcept {
-//     value_type* data = indices_.Data();
-//     std::vector<value_type> vec(data, indices_.size());
-//     return vec;
+//   virtual MatNeighbors& Neighbors() noexcept {
+//     return neighbors_;
 //   }
 //
-//   const Mat<size_t>& Indexes() const noexcept override {
+//   virtual const MatIndexes& Indexes() const noexcept {
 //     return indices_;
 //   }
 //
-//   const Mat<value_type>& Distances(size_t i) const noexcept {
-//     value_type* data = dists_[i].Data();
-//     std::vector<value_type> vec(data, indices_.size());
-//     return vec;
+//   virtual MatIndexes& Indexes() noexcept {
+//     return indices_;
 //   }
 //
-//   virtual std::vector<value_type> Neighbors(size_t i) const noexcept override {
-//     size_t row = 0;
-//     auto indices = indices_[i];
-//     std::vector<value_type> vec(this->n_);
-//
-//     for (const auto& indice: indices) {
-//       vec.insert(sim_(indice, i));
-//     }
-//
-//     return vec;
+//   virtual typename MatNeighbors::Row Neighbors(size_t i) noexcept {
+//     return neighbors_.Row(i);
 //   }
 //
-//   virtual std::vector<size_t> Indexes(size_t i) const noexcept override {
-//     value_type* data = indices_[i].Data();
-//     std::vector<value_type> vec(data, indices_.size());
-//     return vec;
+//   virtual typename MatIndexes::Row Indexes(size_t i) noexcept {
+//     return indices_(i);
 //   }
 //
 //  private:
-//   std::vector<flann::Mat<size_t>> indices_;
-//   std::vector<flann::Mat<T, Alloc>> dists_;
+//   void CalcNeighbors() {
+//     MatNeighbors mat(indices_.Rows(), indices_.Cols());
+//
+//     // TODO: Change this for to parallel_for
+//     size_t row = 0;
+//     for (size_t i = 0; i < indices_.Rows(); i++) {
+//       auto indices_row = indices_.Row(i);
+//
+//       for (size_t j = 0; j < indices_row.Size(); j++) {
+//         neighbors_(indices_row[j], j, i);
+//       }
+//     }
+//   }
+//
+//   MatNeighbors neighbors_;
+//   flann::Mat<size_t, Alloc> indices_;
+//   flann::Mat<T, Alloc> dists_;
 // };
 
 template<class Data, class Sim>
@@ -192,7 +212,9 @@ class Correlation {
     Sim sim(data_size);
     Range<size_t> range_sim(0, data_size);
 
-    // To calculates all similarities with have a serie:]
+    // To calculates all similarities, note that dynamic programming
+    // can be used, for all item or user n, all n's before has already
+    // been calculed, as:
     // (n-1) + (n-2) + (n-3) + ...
     // parallel_for is used for main loop, but each item
     // calculates its similarity serially

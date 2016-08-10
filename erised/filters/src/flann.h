@@ -13,16 +13,19 @@
 
 namespace erised { namespace flann {
 
-template<class T, class Alloc = std::allocator<T>>
+template<class T, template<typename = T> class Alloc = std::allocator>
 class Mat;
 
-template<class T, class Alloc = std::allocator<T>>
+template<class T, template<typename = T> class Alloc = std::allocator>
 class MatRef: public VecContinuous<T> {
 
   friend class Mat<T, Alloc>;
 
  public:
   using value_type = T;
+
+  template<class A>
+  using alloc = Alloc<A>;
 
   MatRef(const MatRef& mr)
     : ptr_(mr.ptr_), size_(mr.size_), step_(mr.step_) {}
@@ -33,13 +36,13 @@ class MatRef: public VecContinuous<T> {
     mr.size_ = 0;
   }
 
-  MatRef<T>& operator=(const MatRef<T>& mr) {
+  MatRef& operator=(const MatRef& mr) {
     ptr_ = mr.ptr_;
     size_ = mr.size_;
     step_ = mr.step_;
   }
 
-  MatRef<T>& operator=(MatRef<T>&& mr) {
+  MatRef& operator=(MatRef&& mr) {
     ptr_ = mr.ptr_;
     size_ = mr.size_;
     step_ = mr.step_;
@@ -79,13 +82,17 @@ class MatRef: public VecContinuous<T> {
   size_t step_;
 };
 
-template<class T, class Alloc>
+template<class T, template<typename> class Alloc>
 class Mat: protected ::flann::Matrix<T>,
-public MatIter<T, Mat<T, Alloc>>{
+    public MatIter<T, Mat<T, Alloc>>{
  public:
   static constexpr bool continuous = true;
 
   using value_type = T;
+
+  template<class A>
+  using alloc = Alloc<A>;
+
   using iterator = typename std::vector<T>::iterator;
   using const_iterator = typename std::vector<T>::const_iterator;
   using IterType = MatRef<T, Alloc>;
@@ -149,7 +156,7 @@ public MatIter<T, Mat<T, Alloc>>{
     mat.delete_ = false;
   }
 
-  Mat<T, Alloc>& operator=(const Mat<T, Alloc>& mat) {
+  Mat& operator=(const Mat& mat) {
     // self-assignment check
     if (this != &mat) {
       row_size_ = mat.row_size_;
@@ -169,7 +176,7 @@ public MatIter<T, Mat<T, Alloc>>{
     return *this;
   }
 
-  Mat<T, Alloc>& operator=(Mat<T, Alloc>&& mat) {
+  Mat& operator=(Mat&& mat) {
     this->data = mat.data;
     mat.data = nullptr;
 
@@ -252,8 +259,9 @@ public MatIter<T, Mat<T, Alloc>>{
     return ::flann::Matrix<T>(this->data, row_size_, col_size_);
   }
 
-  template<typename U, typename UAlloc>
-  friend std::ostream& operator<<(std::ostream& stream, const Mat<U, UAlloc>& mat);
+  template<class U, template<typename> class UAlloc>
+  friend std::ostream& operator<<(std::ostream& stream,
+                                  const Mat<U, UAlloc>& mat);
 
  protected:
   size_t row_size_;
@@ -263,7 +271,7 @@ public MatIter<T, Mat<T, Alloc>>{
   bool delete_;
 };
 
-template<typename U, typename UAlloc>
+template<class U, template<typename> class UAlloc>
 std::ostream& operator<<(std::ostream& stream, const Mat<U, UAlloc>& mat) {
   for (int i = 0; i < mat.row_size_; i++) {
     for (int j = 0; j < mat.col_size_; j++) {
@@ -275,16 +283,21 @@ std::ostream& operator<<(std::ostream& stream, const Mat<U, UAlloc>& mat) {
   return stream;
 }
 
-template<class T, class Alloc = std::allocator<T>>
+template<class T, template<typename = T> class Alloc = std::allocator>
 class SimMat: public Mat<T, Alloc> {
  public:
+  using value_type = T;
+
+  template<class A>
+  using alloc = Alloc<A>;
+
   inline SimMat(): Mat<T, Alloc>() {}
 
   inline SimMat(size_t size)
     : Mat<T, Alloc>(size, size) {}
 
   inline SimMat(T* data, size_t size)
-  : Mat<T, Alloc>(data, size, size) {}
+    : Mat<T, Alloc>(data, size, size) {}
 
   inline SimMat(const std::vector<T>& v, size_t size)
     : Mat<T, Alloc>(v, size, size) {}
