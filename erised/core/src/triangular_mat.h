@@ -63,11 +63,10 @@ constexpr size_t TriangularMatElems(size_t size) {
  *
  */
 template<typename T>
-class TriangularMat: public MatIter<T, TriangularMat<T>,
-                                    TriangularMatAxisRef<T>> {
+class TriangularMat: public MatIter<T, TriangularMat<T>> {
 
  public:
-  using Base = MatIter<T, TriangularMat<T>, TriangularMatAxisRef<T>>;
+  using Base = MatIter<T, TriangularMat<T>>;
 
   TriangularMat(): elems_(0), size_(0), unit_(static_cast<T>(1)) {}
 

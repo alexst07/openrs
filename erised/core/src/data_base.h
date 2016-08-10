@@ -288,7 +288,7 @@ class VecDiscontinuous: public Vec<T> {
 
 
 // MatIter model a matrix with iterator
-template<class T, class Derived, class IterType>
+template<class T, class Derived>
 class MatIter: Mat2d<T> {
 
  protected:
