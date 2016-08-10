@@ -27,9 +27,18 @@ TEST(Sample, LoopMat) {
   std::vector<float> datav = {1, 2, 3, 1, 2, 3, 4, 3, 4, 5};
   Mat<float> data(datav.data(), 5, 2);
 
+  std::cout << data << "\n";
+
   for (const auto e: data) {
-      std::cout << e << " ";
+     std::cout << e << " ";
   }
+
+  std::cout << "\n---------\n";
+
+  auto row = data.Row(2);
+
+  for (auto const& e: row)
+    std::cout << e << " ";
 }
 
 TEST(Sample, Sampleunit) {

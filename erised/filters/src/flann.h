@@ -81,7 +81,7 @@ class MatRef: public VecContinuous<T> {
 
 template<class T, class Alloc>
 class Mat: protected ::flann::Matrix<T>,
-public MatIter<T, Mat<T, Alloc>, MatRef<T, Alloc>>{
+public MatIter<T, Mat<T, Alloc>>{
  public:
   static constexpr bool continuous = true;
 
@@ -221,11 +221,11 @@ public MatIter<T, Mat<T, Alloc>, MatRef<T, Alloc>>{
   }
 
   virtual value_type& operator[](size_t i) {
-    return this->operator()(i/this->col_size_, i%this->row_size_);
+    return Data()[i];
   }
 
   virtual size_t SizeIter() const noexcept {
-    return Rows();
+    return Rows()*Cols();
   }
 
   inline size_t Rows() const noexcept {
@@ -234,6 +234,10 @@ public MatIter<T, Mat<T, Alloc>, MatRef<T, Alloc>>{
 
   inline size_t Cols() const noexcept {
     return this->col_size_;
+  }
+
+  MatRef<value_type> Row(size_t i) {
+    return MatRef<value_type, Alloc>(Data() + i*Cols(), Cols());
   }
 
   inline T* Data() noexcept {
