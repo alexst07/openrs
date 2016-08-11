@@ -4,6 +4,7 @@
 #include <vector>
 
 #include "flann.h"
+#include "correlation.h"
 
 TEST(Sample, MoveSim) {
   erised::flann::SimMat<float> sim(2);
@@ -39,6 +40,35 @@ TEST(Sample, LoopMat) {
 
   for (auto const& e: row)
     std::cout << e << " ";
+}
+
+TEST(Sample, SimMat) {
+  using namespace erised::flann;
+
+  std::vector<float> datav = {1, 2, 3, 4, 1, 3, 1, 2, 2, 3, 1, 5, 3, 1, 1, 2, 4, 2, 5, 2};
+  SimMat<float> data(datav.data(), 5);
+
+  std::cout << data << "\n";
+
+  for (const auto e: data) {
+     std::cout << e << " ";
+  }
+
+  std::cout << "\n---------\n";
+
+  auto row = data.Row(2);
+
+  for (auto const& e: row)
+    std::cout << e << " ";
+}
+
+TEST(Sample, Neighbors) {
+  using namespace erised::flann;
+
+  std::vector<float> datav = {1, 2, 3, 4, 1, 3, 1, 2, 2, 3, 1, 5, 3, 1, 1, 2, 4, 2, 5, 2};
+  SimMat<float> data(datav.data(), 5);
+
+  erised::Knn<SimMat<float>> knn(data, 2, KDTreeIndexParams(4), SearchParams(4));
 }
 
 TEST(Sample, Sampleunit) {

@@ -16,7 +16,7 @@
 
 namespace erised {
 
-template<class MatIn, template <typename, template<typename> class> class Mat>
+template<class MatIn, template<typename, template<typename> class> class Mat>
 class NeighborsBase {
  public:
   using value_type = typename MatIn::value_type;
@@ -35,38 +35,14 @@ class NeighborsBase {
 
   virtual MatIndexes& Indexes() noexcept = 0;
 
-  virtual typename MatNeighbors::Row Neighbors(size_t) noexcept = 0;
+  virtual typename MatNeighbors::RowType Neighbors(size_t) noexcept = 0;
 
-  virtual typename MatIndexes::Row Indexes(size_t) noexcept = 0;
+  virtual typename MatIndexes::RowType Indexes(size_t) noexcept = 0;
 
  protected:
   MatIn& mat_;
   size_t n_;
 };
-
-// template<class MatIn, class MatNeighbors, class MatIndexes>
-// class NeighborsKnn {
-//  public:
-//   NeighborsBase(MatIn& mat, size_t n): mat_(mat), n_(n) {}
-//
-//   virtual ~NeighborsBase() = default;
-//
-//   virtual const MatNeighbors& Neighbors() const noexcept = 0;
-//
-//   virtual const MatIndexes& Indexes() const noexcept = 0;
-//
-//   virtual MatNeighbors& Neighbors() noexcept = 0;
-//
-//   virtual MatIndexes& Indexes() noexcept = 0;
-//
-//   virtual typename MatNeighbors::Row Neighbors(size_t) noexcept = 0;
-//
-//   virtual typename MatIndexes::Row Indexes(size_t) noexcept = 0;
-//
-//  protected:
-//   MatIn& mat_;
-//   size_t n_;
-// };
 
 template<class Sim>
 class Knn: public NeighborsBase<Sim, flann::Mat> {
@@ -108,89 +84,105 @@ class Knn: public NeighborsBase<Sim, flann::Mat> {
 };
 
 
+template<>
+template<class T, template<typename> class Alloc>
+class Knn<flann::Mat<T, Alloc>>
+    : public NeighborsBase<flann::Mat<T, Alloc>, flann::Mat> {
 
-// template<class Sim>
-// class Knn: public NeighborsBase<Sim, flann::Mat<typename Sim::value_type,
-//     typename Sim::alloc<typename Sim::value_type>>> {
-//
-//  public:
-//   using value_type = typename flann::SimMat<T, Alloc>::value_type;
-//   using Base = NeighborsBase<flann::SimMat<T, Alloc>, flann::Mat>;
-//   using Sim = typename flann::SimMat<T, Alloc>;
-//   using MatIn = flann::SimMat<T, Alloc>;
-//   using MatNeighbors = flann::Mat<T, Alloc>;
-//   using MatIndexes = flann::Mat<size_t, Alloc>;
-//
-//   Knn(Sim& sim, size_t n, const flann::IndexParams& iparams,
-//       const flann::SearchParams& sparams)
-//     : Base(sim, n)
-//     , neighbors_(this->sim_.Rows(), n)
-//     , indices_(this->sim_.Rows(), n)
-//     , dists_(this->sim_.Rows(), n) {
-//     size_t num_rows = sim.Rows();
-//     size_t num_cols = sim.Cols();
-//
-//     for (size_t i = 0; i < num_rows; i++) {
-//       // Gets num_cols elements from sim[num_cols*i]
-//       flann::Mat<value_type, Alloc> row(sim.Data + num_cols*i, num_cols);
-//
-//       flann::Index<flann::L2<value_type>> index(this->sim_, iparams);
-//
-//       index.BuildIndex();
-//
-//       // Writes in each row from matrix indices_ and dists_
-//       index.KnnSearch(row, const_cast<flann::Mat<size_t>>(indices_.Row(i).Data()),
-//                       const_cast<flann::Mat<T, Alloc>>(dists_.Row(i).Data()), n, sparams);
-//     }
-//
-//     CalcNeighbors();
-//   }
-//
-//   virtual ~Knn() = default;
-//
-//   virtual const MatNeighbors& Neighbors() const noexcept {
-//     return neighbors_;
-//   }
-//
-//   virtual MatNeighbors& Neighbors() noexcept {
-//     return neighbors_;
-//   }
-//
-//   virtual const MatIndexes& Indexes() const noexcept {
-//     return indices_;
-//   }
-//
-//   virtual MatIndexes& Indexes() noexcept {
-//     return indices_;
-//   }
-//
-//   virtual typename MatNeighbors::Row Neighbors(size_t i) noexcept {
-//     return neighbors_.Row(i);
-//   }
-//
-//   virtual typename MatIndexes::Row Indexes(size_t i) noexcept {
-//     return indices_(i);
-//   }
-//
-//  private:
-//   void CalcNeighbors() {
-//     MatNeighbors mat(indices_.Rows(), indices_.Cols());
-//
-//     // TODO: Change this for to parallel_for
-//     size_t row = 0;
-//     for (size_t i = 0; i < indices_.Rows(); i++) {
-//       auto indices_row = indices_.Row(i);
-//
-//       for (size_t j = 0; j < indices_row.Size(); j++) {
-//         neighbors_(indices_row[j], j, i);
-//       }
-//     }
-//   }
-//
-//   MatNeighbors neighbors_;
-//   flann::Mat<size_t, Alloc> indices_;
-//   flann::Mat<T, Alloc> dists_;
-// };
+ public:
+  using value_type = typename flann::Mat<T, Alloc>::value_type;
+  using Base = NeighborsBase<flann::Mat<T, Alloc>, flann::Mat>;
+  using Sim = flann::Mat<T, Alloc>;
+  using MatIn = flann::Mat<T, Alloc>;
+  using MatNeighbors = flann::Mat<typename Sim::value_type, Sim::template alloc>;
+  using MatIndexes = flann::Mat<size_t, Sim::template alloc>;
+
+  Knn(Sim& sim, size_t n, const flann::IndexParams& iparams,
+      const flann::SearchParams& sparams)
+    : Base(sim, n)
+    , neighbors_(this->mat_.Rows(), n)
+    , indices_(this->mat_.Rows(), n)
+    , dists_(this->mat_.Rows(), n) {
+    size_t num_rows = sim.Rows();
+    size_t num_cols = sim.Cols();
+
+    for (size_t i = 0; i < num_rows; i++) {
+      // Gets num_cols elements from sim[num_cols*i]
+      flann::Mat<value_type, Alloc> row(&sim.Data()[num_cols*i], num_cols, 1);
+      flann::Mat<size_t, Alloc> indices(indices_.Row(i).Data(), num_cols, 1);
+      flann::Mat<value_type, Alloc> dists(dists_.Row(i).Data(), num_cols, 1);
+
+      flann::Index<flann::L2<value_type>> index(this->mat_, iparams);
+
+      index.BuildIndex();
+
+      // Writes in each row from matrix indices_ and dists_
+      index.KnnSearch(row, indices, dists, n, sparams);
+    }
+
+    CalcNeighbors();
+  }
+
+  virtual ~Knn() = default;
+
+  virtual const MatNeighbors& Neighbors() const noexcept {
+    return neighbors_;
+  }
+
+  virtual MatNeighbors& Neighbors() noexcept {
+    return neighbors_;
+  }
+
+  virtual const MatIndexes& Indexes() const noexcept {
+    return indices_;
+  }
+
+  virtual MatIndexes& Indexes() noexcept {
+    return indices_;
+  }
+
+  virtual typename MatNeighbors::RowType Neighbors(size_t i) noexcept {
+    return neighbors_.Row(i);
+  }
+
+  virtual typename MatIndexes::RowType Indexes(size_t i) noexcept {
+    return indices_.Row(i);
+  }
+
+ private:
+  void CalcNeighbors() {
+    MatNeighbors mat(indices_.Rows(), indices_.Cols());
+
+    // TODO: Change this for to parallel_for
+    size_t row = 0;
+    for (size_t i = 0; i < indices_.Rows(); i++) {
+      auto indices_row = indices_.Row(i);
+
+      for (size_t j = 0; j < indices_row.Size(); j++) {
+        neighbors_(indices_row[j], j, i);
+      }
+    }
+  }
+
+  MatNeighbors neighbors_;
+  flann::Mat<size_t, Alloc> indices_;
+  flann::Mat<T, Alloc> dists_;
+};
+
+template<>
+template<class T, template<typename> class Alloc>
+class Knn<flann::SimMat<T, Alloc>>: public Knn<flann::Mat<T, Alloc>> {
+ public:
+  using value_type = typename flann::Mat<T, Alloc>::value_type;
+  using Base = Knn<flann::Mat<T, Alloc>>;
+  using Sim = flann::Mat<T, Alloc>;
+
+  Knn(Sim& sim, size_t n, const flann::IndexParams& iparams,
+      const flann::SearchParams& sparams)
+    : Base(sim, n, iparams, sparams) {}
+
+  virtual ~Knn() = default;
+};
 
 template<class Data, class Sim>
 class Correlation {

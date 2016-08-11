@@ -93,9 +93,8 @@ class Mat: protected ::flann::Matrix<T>,
   template<class A>
   using alloc = Alloc<A>;
 
-  using iterator = typename std::vector<T>::iterator;
-  using const_iterator = typename std::vector<T>::const_iterator;
   using IterType = MatRef<T, Alloc>;
+  using RowType = MatRef<value_type, Alloc>;
 
   inline Mat(): row_size_(0), col_size_(0), delete_(false) {}
 
@@ -216,7 +215,7 @@ class Mat: protected ::flann::Matrix<T>,
   }
 
   inline const value_type* Data() const noexcept {
-    return this->data;
+    return reinterpret_cast<value_type*>(this->data);
   }
 
   inline size_t Size() const noexcept {
@@ -243,19 +242,19 @@ class Mat: protected ::flann::Matrix<T>,
     return this->col_size_;
   }
 
-  MatRef<value_type> Row(size_t i) {
+  RowType Row(size_t i) {
     return MatRef<value_type, Alloc>(Data() + i*Cols(), Cols());
   }
 
   inline T* Data() noexcept {
-    return reinterpret_cast<T*>(this->data);
+    return const_cast<T*>(reinterpret_cast<T*>(this->data));
   }
 
   inline size_t Capacity() const noexcept {
-    return row_size_*col_size_;
+    return this->rows*this->cols;
   }
 
-  inline ::flann::Matrix<T>& FlannMat() noexcept {
+  inline ::flann::Matrix<T> FlannMat() noexcept {
     return ::flann::Matrix<T>(this->data, row_size_, col_size_);
   }
 
@@ -291,16 +290,38 @@ class SimMat: public Mat<T, Alloc> {
   template<class A>
   using alloc = Alloc<A>;
 
+  using Base = Mat<T, Alloc>;
+  using RowType = typename Base::RowType;
+
   inline SimMat(): Mat<T, Alloc>() {}
 
+  /**
+   * the size of sim matrix is 4
+   *
+   * 1 2 3 4
+   * 2 1 5 6
+   * 3 5 1 2
+   * 4 6 2 1
+   *
+   * if the diagonal is taken off
+   *
+   * 2 3 4
+   * 2 5 6
+   * 3 5 2
+   * 4 6 2
+   *
+   * the matrix has now a col with size 3,
+   * so the size of col must 1 minus the
+   * size of rows
+   */
   inline SimMat(size_t size)
-    : Mat<T, Alloc>(size, size) {}
+    : Mat<T, Alloc>(size, size - 1) {}
 
   inline SimMat(T* data, size_t size)
-    : Mat<T, Alloc>(data, size, size) {}
+    : Mat<T, Alloc>(data, size, size - 1) {}
 
   inline SimMat(const std::vector<T>& v, size_t size)
-    : Mat<T, Alloc>(v, size, size) {}
+    : Mat<T, Alloc>(size, size - 1) {}
 
   SimMat(SimMat&& sim): Mat<T, Alloc>(std::move(sim)) {}
 
@@ -315,11 +336,38 @@ class SimMat: public Mat<T, Alloc> {
   }
 
   void operator()(T value, size_t x, size_t y) override {
-    reinterpret_cast<T*>(this->data)[this->col_size_*x + y] = value;
-    reinterpret_cast<T*>(this->data)[this->row_size_*y + x] = value;
+    // Diagonal elements must no be set, because it is always 1
+    // on similarities matrix
+    if (x == y)
+      return;
+
+    size_t xt = x;
+
+    // If the position is is higher than the position of the
+    // diagonal element must subtract its position, since
+    // in this case the diagonal does not exist, because
+    // it is always formed by 1's
+    if (xt > y)
+      xt--;
+
+    reinterpret_cast<T*>(this->data)[this->col_size_*y + xt] = value;
+
+    // as the matrix of similarities is symmetrical with its diagonal
+    // with unitary elements, in which case you need to change the
+    // value in two places to achieve this behavior
+    if (y > x)
+      y--;
+
+    reinterpret_cast<T*>(this->data)[this->row_size_*x + y] = value;
   }
 
   inline T& operator()(size_t x, size_t y) {
+    // If the position is is higher than the position of the
+    // diagonal elementin the row, it must subtract its position,
+    // since in this case the diagonal does not exist, because
+    // it is always formed by 1's
+    if (x > y)
+      x--;
     return Mat<T, Alloc>::operator()(x, y);
   }
 
@@ -415,7 +463,8 @@ class Index {
  public:
   using Value = typename ::flann::Index<Distance>::ElementType;
 
-  inline Index(const Mat<Value>& data, const IndexParams& params)
+  template<class Mat>
+  inline Index(const Mat& data, const IndexParams& params)
     : index_(::flann::Matrix<Value>(const_cast<Value*>(data.Data()),
                                     data.Rows(),
                                     data.Cols()), params){}
@@ -426,19 +475,26 @@ class Index {
     index_.buildIndex();
   }
 
-  void KnnSearch(const Mat<Value>& query, Mat<size_t>& indices,
-                 Mat<Value>& dists, size_t nn,
+  template<class Mat, class MatSize>
+  void KnnSearch(const Mat& query, MatSize& indices,
+                 Mat& dists, size_t nn,
                  const SearchParams& params) {
     if (indices.Capacity() != query.Rows()*nn)
-      ERISED_Error(Error::BAD_ALLOC, "Indices matrix has no enough size");
+      ERISED_Error(Error::BAD_ALLOC, "Indices matrix has no enough size\n"
+                   "Indices Capacity: %d, Need: %d",indices.Capacity(), query.Rows()*nn);
 
     if (dists.Capacity() != query.Rows()*nn)
-      ERISED_Error(Error::BAD_ALLOC, "Indices matrix has no enough size");
+      ERISED_Error(Error::BAD_ALLOC, "Indices matrix has no enough size\n"
+                   "dists Capacity: %d, Need: %d",dists.Capacity(), query.Rows()*nn);
 
     ::flann::Matrix<Value> fquery(const_cast<Value*>(query.Data()),
                                   query.Rows(), query.Cols());
+    ::flann::Matrix<size_t> findices(const_cast<size_t*>(indices.Data()), indices.Rows(),
+                       indices.Cols());
+    ::flann::Matrix<Value> fdists(const_cast<Value*>(dists.Data()),
+                                  dists.Rows(), dists.Cols());
 
-    index_.knnSearch(fquery, indices.FlannMat(), dists.FlannMat(), nn, params);
+    index_.knnSearch(fquery, findices, fdists, nn, params);
   }
 
  private:
