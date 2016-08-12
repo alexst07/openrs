@@ -109,8 +109,8 @@ class Knn<flann::Mat<T, Alloc>>
     for (size_t i = 0; i < num_rows; i++) {
       // Gets num_cols elements from sim[num_cols*i]
       flann::Mat<value_type, Alloc> row(&sim.Data()[num_cols*i], num_cols, 1);
-      flann::Mat<size_t, Alloc> indices(indices_.Row(i).Data(), num_cols, 1);
-      flann::Mat<value_type, Alloc> dists(dists_.Row(i).Data(), num_cols, 1);
+      flann::Mat<size_t, Alloc> indices(indices_.Row(i).Data(), num_rows, n);
+      flann::Mat<value_type, Alloc> dists(dists_.Row(i).Data(), num_rows, n);
 
       flann::Index<flann::L2<value_type>> index(this->mat_, iparams);
 
