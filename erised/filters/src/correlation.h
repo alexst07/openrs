@@ -7,6 +7,7 @@
 #include <array>
 #include <memory>
 #include <unordered_map>
+#include <tuple>
 
 #include "exception.h"
 #include "data_base.h"
@@ -23,7 +24,7 @@ class NeighborsBase {
   using MatNeighbors = Mat<value_type, MatIn::template alloc>;
   using MatIndexes = Mat<size_t, MatIn::template alloc>;
 
-  NeighborsBase(MatIn& mat, size_t n): mat_(mat), n_(n) {}
+  NeighborsBase(MatIn& mat): mat_(mat) {}
 
   virtual ~NeighborsBase() = default;
 
@@ -41,7 +42,6 @@ class NeighborsBase {
 
  protected:
   MatIn& mat_;
-  size_t n_;
 };
 
 template<class Sim>
@@ -97,33 +97,33 @@ class Knn<flann::Mat<T, Alloc>>
   using MatNeighbors = flann::Mat<typename Sim::value_type, Sim::template alloc>;
   using MatIndexes = flann::Mat<size_t, Sim::template alloc>;
 
-  Knn(Sim& sim, size_t n, const flann::IndexParams& iparams,
+  Knn(Sim& sim, const flann::IndexParams& iparams,
       const flann::SearchParams& sparams)
-    : Base(sim, n)
-    , neighbors_(this->mat_.Rows(), n)
-    , indices_(this->mat_.Rows(), n)
-    , dists_(this->mat_.Rows(), n) {
-    size_t num_rows = sim.Rows();
-    size_t num_cols = sim.Cols();
+    : Base(sim)
+    , sparams_(sparams)
+    , iparams_(iparams) {}
+
+  virtual ~Knn() = default;
+
+  void Search(MatIn data_test, size_t n) {
+    size_t num_rows = this->mat_.Rows();
+    size_t num_cols = this->mat_.Cols();
+
+    neighbors_ =
+        std::move(flann::Mat<value_type, Alloc>(this->mat_.Rows(), n));
 
     for (size_t i = 0; i < num_rows; i++) {
       // Gets num_cols elements from sim[num_cols*i]
-      flann::Mat<value_type, Alloc> row(&sim.Data()[num_cols*i], num_cols, 1);
-      flann::Mat<size_t, Alloc> indices(indices_.Row(i).Data(), num_rows, n);
-      flann::Mat<value_type, Alloc> dists(dists_.Row(i).Data(), num_rows, n);
+      flann::Mat<value_type, Alloc> row(&this->mat_.Data()[num_cols*i], num_cols, 1);
 
-      flann::Index<flann::L2<value_type>> index(this->mat_, iparams);
-
-      index.BuildIndex();
+      flann::Index<value_type, flann::L2<value_type>> index(row, iparams_);
 
       // Writes in each row from matrix indices_ and dists_
-      index.KnnSearch(row, indices, dists, n, sparams);
+      std::tie(indices_, std::ignore) = index.KnnSearch(data_test, n, sparams_);
     }
 
     CalcNeighbors();
   }
-
-  virtual ~Knn() = default;
 
   virtual const MatNeighbors& Neighbors() const noexcept {
     return neighbors_;
@@ -166,7 +166,8 @@ class Knn<flann::Mat<T, Alloc>>
 
   MatNeighbors neighbors_;
   flann::Mat<size_t, Alloc> indices_;
-  flann::Mat<T, Alloc> dists_;
+  const flann::SearchParams& sparams_;
+  const flann::IndexParams& iparams_;
 };
 
 template<>
@@ -177,9 +178,9 @@ class Knn<flann::SimMat<T, Alloc>>: public Knn<flann::Mat<T, Alloc>> {
   using Base = Knn<flann::Mat<T, Alloc>>;
   using Sim = flann::Mat<T, Alloc>;
 
-  Knn(Sim& sim, size_t n, const flann::IndexParams& iparams,
+  Knn(Sim& sim, const flann::IndexParams& iparams,
       const flann::SearchParams& sparams)
-    : Base(sim, n, iparams, sparams) {}
+    : Base(sim, iparams, sparams) {}
 
   virtual ~Knn() = default;
 };

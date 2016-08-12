@@ -6,6 +6,7 @@
 #include <vector>
 #include <array>
 #include <memory>
+#include <tuple>
 #include <flann/flann.hpp>
 
 #include "exception.h"
@@ -432,46 +433,47 @@ typedef ::flann::KMeansIndexParams KMeansIndexParams;
  *****************************************************************************/
 typedef struct ::flann::SearchParams SearchParams;
 
-template<typename Distance>
+template<class T, class Distance, template<typename = T> class Alloc =
+    std::allocator>
 class Index {
  public:
-  using Value = typename ::flann::Index<Distance>::ElementType;
+  using type_value = typename ::flann::Index<Distance>::ElementType;
+  using FMat = Mat<T, Alloc>;
+  using FMatSize = Mat<size_t, Alloc>;
 
-  template<class Mat>
-  inline Index(const Mat& data, const IndexParams& params)
-    : index_(::flann::Matrix<Value>(const_cast<Value*>(data.Data()),
+  inline Index(const FMat& data, const IndexParams& params)
+    : index_(::flann::Matrix<type_value>(const_cast<type_value*>(data.Data()),
                                     data.Rows(),
-                                    data.Cols()), params){}
+                                    data.Cols()), params){
+    BuildIndex();
+  }
 
   ~Index() {}
 
+  std::tuple<FMatSize, FMat> KnnSearch(const FMat& query, size_t nn,
+                                     const SearchParams& params) {
+    FMatSize indices(query.Rows(), nn);
+    FMat dists(query.Rows(), nn);
+
+    ::flann::Matrix<type_value> fquery(const_cast<type_value*>(query.Data()),
+                                  query.Rows(), query.Cols());
+
+    ::flann::Matrix<size_t> findices(const_cast<size_t*>(indices.Data()),
+                                     indices.Rows(), indices.Cols());
+
+    ::flann::Matrix<type_value> fdists(const_cast<type_value*>(dists.Data()),
+                                  dists.Rows(), dists.Cols());
+
+    index_.knnSearch(fquery, findices, fdists, nn, params);
+
+    return std::tuple<FMatSize, FMat>(std::move(indices), std::move(dists));
+  }
+
+ private:
   inline void BuildIndex() {
     index_.buildIndex();
   }
 
-  template<class Mat, class MatSize>
-  void KnnSearch(const Mat& query, MatSize& indices,
-                 Mat& dists, size_t nn,
-                 const SearchParams& params) {
-    if (indices.Capacity() != query.Rows()*nn)
-      ERISED_Error(Error::BAD_ALLOC, "Indices matrix has no enough size\n"
-                   "Indices Capacity: %d, Need: %d",indices.Capacity(), query.Rows()*nn);
-
-    if (dists.Capacity() != query.Rows()*nn)
-      ERISED_Error(Error::BAD_ALLOC, "Indices matrix has no enough size\n"
-                   "dists Capacity: %d, Need: %d",dists.Capacity(), query.Rows()*nn);
-
-    ::flann::Matrix<Value> fquery(const_cast<Value*>(query.Data()),
-                                  query.Rows(), query.Cols());
-    ::flann::Matrix<size_t> findices(const_cast<size_t*>(indices.Data()), indices.Rows(),
-                       indices.Cols());
-    ::flann::Matrix<Value> fdists(const_cast<Value*>(dists.Data()),
-                                  dists.Rows(), dists.Cols());
-
-    index_.knnSearch(fquery, findices, fdists, nn, params);
-  }
-
- private:
   ::flann::Index<Distance> index_;
 };
 

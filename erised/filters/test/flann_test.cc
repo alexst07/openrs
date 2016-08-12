@@ -65,10 +65,16 @@ TEST(Sample, SimMat) {
 TEST(Sample, Neighbors) {
   using namespace erised::flann;
 
+  std::vector<float> datat = {1};
   std::vector<float> datav = {1, 2, 3, 4, 1, 3, 1, 2, 2, 3, 1, 5, 3, 1, 1, 2, 4, 2, 5, 2};
   SimMat<float> data(datav.data(), 5);
+  Mat<float> data_test(datat, 1, 1);
 
-  erised::Knn<SimMat<float>> knn(data, 2, KDTreeIndexParams(4), SearchParams(4));
+
+  std::cout << "\n===\n" << data << "\n=====\n" << data_test;
+
+  erised::Knn<SimMat<float>> knn(data, KDTreeIndexParams(4), SearchParams(2));
+  knn.Search(data_test, 1);
 }
 
 TEST(Sample, Sampleunit) {
