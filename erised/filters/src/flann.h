@@ -96,32 +96,24 @@ class Mat: protected ::flann::Matrix<T>,
   using IterType = MatRef<T, Alloc>;
   using RowType = MatRef<value_type, Alloc>;
 
-  inline Mat(): row_size_(0), col_size_(0), delete_(false) {}
+  inline Mat(): ::flann::Matrix<T>(), delete_(false) {}
 
   inline Mat(size_t rows, size_t cols)
-    : row_size_(rows)
-    , col_size_(cols)
-    , delete_(true)
-    , ::flann::Matrix<T>(new T[rows*cols], row_size_, col_size_) {}
+    : delete_(true)
+    , ::flann::Matrix<T>(new T[rows*cols], rows, cols) {}
 
   inline Mat(T* data, size_t rows, size_t cols)
-  : row_size_(rows)
-  , col_size_(cols)
-  , delete_(false)
+  : delete_(false)
   , ::flann::Matrix<T>(data, rows, cols) {}
 
   inline Mat(const std::vector<T>& v, size_t rows, size_t cols)
-    : row_size_(rows)
-    , col_size_(cols)
-    , delete_(false)
+    : delete_(false)
     , ::flann::Matrix<T>(const_cast<T*>(v.data()),
-                         row_size_, col_size_) {}
+                         rows, cols) {}
 
   inline Mat(const Mat& mat) {
     // self-assignment check
     if (this != &mat) {
-      row_size_ = mat.row_size_;
-      col_size_ = mat.row_size_;
       delete_ = mat.delete_;
       this->rows = mat.rows;
       this->stride = mat.stride;
@@ -129,9 +121,9 @@ class Mat: protected ::flann::Matrix<T>,
 
       if (!delete_)
         this->data = reinterpret_cast<decltype(this->data)>(
-            new T[row_size_*col_size_]);
+            new T[this->rows*this->cols]);
 
-      memcpy(this->data, mat.data, col_size_*col_size_*sizeof(T));
+      memcpy(this->data, mat.data, this->rows*this->cols*sizeof(T));
     }
   }
 
@@ -143,23 +135,17 @@ class Mat: protected ::flann::Matrix<T>,
     this->rows = mat.rows;
     this->stride = mat.stride;
     this->cols = mat.cols;
-    row_size_ = mat.row_size_;
-    col_size_ = mat.col_size_;
     delete_ = mat.delete_;
 
     mat.rows = 0;
     mat.stride = 0;
     mat.cols = 0;
-    mat.row_size_ = 0;
-    mat.col_size_ = 0;
     mat.delete_ = false;
   }
 
   Mat& operator=(const Mat& mat) {
     // self-assignment check
     if (this != &mat) {
-      row_size_ = mat.row_size_;
-      col_size_ = mat.row_size_;
       delete_ = mat.delete_;
       this->rows = mat.rows;
       this->stride = mat.stride;
@@ -167,9 +153,9 @@ class Mat: protected ::flann::Matrix<T>,
 
       if (!delete_)
         this->data = reinterpret_cast<decltype(this->data)>(
-            new T[row_size_*col_size_]);
+            new T[this->rows*this->cols]);
 
-      memcpy(this->data, mat.data, col_size_*col_size_*sizeof(T));
+      memcpy(this->data, mat.data, this->rows*this->cols*sizeof(T));
     }
 
     return *this;
@@ -182,15 +168,11 @@ class Mat: protected ::flann::Matrix<T>,
     this->rows = mat.rows;
     this->stride = mat.stride;
     this->cols = mat.cols;
-    row_size_ = mat.row_size_;
-    col_size_ = mat.row_size_;
     delete_ = mat.delete_;
 
     mat.rows = 0;
     mat.stride = 0;
     mat.cols = 0;
-    mat.row_size_ = 0;
-    mat.col_size_ = 0;
     mat.delete_ = false;
 
     return *this;
@@ -203,15 +185,15 @@ class Mat: protected ::flann::Matrix<T>,
 
   // set value to position (x,y)
   virtual void operator()(T value, size_t x, size_t y) {
-    reinterpret_cast<T*>(this->data)[col_size_*x + y] = value;
+    reinterpret_cast<T*>(this->data)[this->cols*x + y] = value;
   }
 
   virtual const value_type& operator()(size_t x, size_t y) const {
-    return reinterpret_cast<T*>(this->data)[col_size_*x + y];
+    return reinterpret_cast<T*>(this->data)[this->cols*x + y];
   }
 
   virtual value_type& operator()(size_t x, size_t y) {
-    return reinterpret_cast<T*>(this->data)[col_size_*x + y];
+    return reinterpret_cast<T*>(this->data)[this->cols*x + y];
   }
 
   inline const value_type* Data() const noexcept {
@@ -219,7 +201,7 @@ class Mat: protected ::flann::Matrix<T>,
   }
 
   inline size_t Size() const noexcept {
-    return this->row_size_*this->col_size_;
+    return this->rows*this->cols;
   }
 
   inline size_t size() const noexcept {
@@ -235,11 +217,11 @@ class Mat: protected ::flann::Matrix<T>,
   }
 
   inline size_t Rows() const noexcept {
-    return this->row_size_;
+    return this->rows;
   }
 
   inline size_t Cols() const noexcept {
-    return this->col_size_;
+    return this->cols;
   }
 
   RowType Row(size_t i) {
@@ -254,17 +236,9 @@ class Mat: protected ::flann::Matrix<T>,
     return this->rows*this->cols;
   }
 
-  inline ::flann::Matrix<T> FlannMat() noexcept {
-    return ::flann::Matrix<T>(this->data, row_size_, col_size_);
-  }
-
   template<class U, template<typename> class UAlloc>
   friend std::ostream& operator<<(std::ostream& stream,
                                   const Mat<U, UAlloc>& mat);
-
- protected:
-  size_t row_size_;
-  size_t col_size_;
 
  private:
   bool delete_;
@@ -272,8 +246,8 @@ class Mat: protected ::flann::Matrix<T>,
 
 template<class U, template<typename> class UAlloc>
 std::ostream& operator<<(std::ostream& stream, const Mat<U, UAlloc>& mat) {
-  for (int i = 0; i < mat.row_size_; i++) {
-    for (int j = 0; j < mat.col_size_; j++) {
+  for (int i = 0; i < mat.Rows(); i++) {
+    for (int j = 0; j < mat.Cols(); j++) {
       stream << mat(i, j) << " ";
     }
     stream << "\n";
@@ -350,7 +324,7 @@ class SimMat: public Mat<T, Alloc> {
     if (xt > y)
       xt--;
 
-    reinterpret_cast<T*>(this->data)[this->col_size_*y + xt] = value;
+    reinterpret_cast<T*>(this->data)[this->Cols()*y + xt] = value;
 
     // as the matrix of similarities is symmetrical with its diagonal
     // with unitary elements, in which case you need to change the
@@ -358,7 +332,7 @@ class SimMat: public Mat<T, Alloc> {
     if (y > x)
       y--;
 
-    reinterpret_cast<T*>(this->data)[this->row_size_*x + y] = value;
+    reinterpret_cast<T*>(this->data)[this->Rows()*x + y] = value;
   }
 
   inline T& operator()(size_t x, size_t y) {
