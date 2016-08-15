@@ -40,6 +40,14 @@ TEST(Sample, LoopMat) {
 
   for (auto const& e: row)
     std::cout << e << " ";
+
+  std::vector<float> datatv = {10, 10};
+  Mat<float> datat(datatv.data(), 1, 2);
+
+  data.SetRow(2, datat);
+
+  std::cout << "\n---------\n";
+  std::cout << data << "\n";
 }
 
 TEST(Sample, SimMat) {
@@ -73,40 +81,44 @@ TEST(Sample, Neighbors) {
 
   std::cout << "\n===\n" << data << "\n=====\n" << data_test;
 
-  erised::Knn<SimMat<float>> knn(data, KDTreeIndexParams(4), SearchParams(2));
-  knn.Search(data_test, 1);
+  erised::Knn<SimMat<float>> knn(data, KDTreeIndexParams(4));
+  knn.Search(data_test, 2, SearchParams(2));
+
+  std::cout << "\n--Indexes--\n" << knn.Indexes() << "\n";
+
+  std::cout << "\n--Neighbors--\n" << knn.Neighbors() << "\n";
 }
 
 TEST(Sample, Sampleunit) {
-//   using namespace erised::flann;
-//   size_t nn = 3;
-//
-//   std::vector<float> datav = {1, 2, 3, 1, 2, 3, 4, 3, 4, 5};
-//   SimMat<float> data(datav.data(), 5, 2);
-//
-//   std::vector<float> queryv = {4, 2, 2, 2};
-//   SimMat<float> query(queryv.data(), 2, 2);
-//
-//   SimMat<size_t> indices(query.Rows(), nn);
-//   SimMat<float> dists(query.Rows(), nn);
-//
-//   Index<L2<float>> index(data, KDTreeIndexParams(4));
-//   index.BuildIndex();
-//   index.KnnSearch(query, indices, dists, nn, SearchParams(4));
-//
-//   std::cout << data ;
-//
-//   std::cout << "\n-----\n";
-//
-//   std::cout << query;
-//
-//   std::cout << "\n-----\n";
-//
-//   std::cout << indices;
-//
-//   std::cout << "\n-----\n";
-//
-//   std::cout << dists;
+  using namespace erised::flann;
+  size_t nn = 3;
+
+  std::vector<float> datav = {1, 2, 3, 1, 2, 3, 4, 3, 4, 5};
+  Mat<float> data(datav.data(), 5, 2);
+
+  std::vector<float> queryv = {4, 2, 2, 2};
+  Mat<float> query(queryv.data(), 2, 2);
+
+  Mat<size_t> indices;
+  Mat<float> dists;
+
+  Index<float, L2<float>> index(data, KDTreeIndexParams(4));
+
+  std::tie(indices, dists) = index.KnnSearch(query, nn, SearchParams(4));
+
+  std::cout << data ;
+
+  std::cout << "\n--query--\n";
+
+  std::cout << query;
+
+  std::cout << "\n--indices--\n";
+
+  std::cout << indices;
+
+  std::cout << "\n--dists--\n";
+
+  std::cout << dists;
 
 }
 

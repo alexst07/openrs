@@ -97,29 +97,34 @@ class Knn<flann::Mat<T, Alloc>>
   using MatNeighbors = flann::Mat<typename Sim::value_type, Sim::template alloc>;
   using MatIndexes = flann::Mat<size_t, Sim::template alloc>;
 
-  Knn(Sim& sim, const flann::IndexParams& iparams,
-      const flann::SearchParams& sparams)
+  Knn(Sim& sim, const flann::IndexParams& iparams)
     : Base(sim)
-    , sparams_(sparams)
     , iparams_(iparams) {}
 
   virtual ~Knn() = default;
 
-  void Search(MatIn data_test, size_t n) {
+  void Search(MatIn data_test, size_t n, const flann::SearchParams& sparams) {
     size_t num_rows = this->mat_.Rows();
     size_t num_cols = this->mat_.Cols();
 
     neighbors_ =
         std::move(flann::Mat<value_type, Alloc>(this->mat_.Rows(), n));
 
+    indices_ = std::move(flann::Mat<size_t, Alloc>(this->mat_.Rows(), n));
+
     for (size_t i = 0; i < num_rows; i++) {
+
       // Gets num_cols elements from sim[num_cols*i]
       flann::Mat<value_type, Alloc> row(&this->mat_.Data()[num_cols*i], num_cols, 1);
+
+      flann::Mat<size_t, Alloc> indices;
 
       flann::Index<value_type, flann::L2<value_type>> index(row, iparams_);
 
       // Writes in each row from matrix indices_ and dists_
-      std::tie(indices_, std::ignore) = index.KnnSearch(data_test, n, sparams_);
+      std::tie(indices, std::ignore) = index.KnnSearch(data_test, n, sparams);
+
+      indices_.SetRow(i, indices);
     }
 
     CalcNeighbors();
@@ -151,23 +156,21 @@ class Knn<flann::Mat<T, Alloc>>
 
  private:
   void CalcNeighbors() {
-    MatNeighbors mat(indices_.Rows(), indices_.Cols());
-
     // TODO: Change this for to parallel_for
     size_t row = 0;
     for (size_t i = 0; i < indices_.Rows(); i++) {
       auto indices_row = indices_.Row(i);
 
       for (size_t j = 0; j < indices_row.Size(); j++) {
-        neighbors_(indices_row[j], j, i);
+        size_t indice = indices_row[j];
+        neighbors_(this->mat_(i, (indice > i? --indice:indice)), i, j);
       }
     }
   }
 
   MatNeighbors neighbors_;
   flann::Mat<size_t, Alloc> indices_;
-  const flann::SearchParams& sparams_;
-  const flann::IndexParams& iparams_;
+  flann::IndexParams iparams_;
 };
 
 template<>
@@ -178,9 +181,7 @@ class Knn<flann::SimMat<T, Alloc>>: public Knn<flann::Mat<T, Alloc>> {
   using Base = Knn<flann::Mat<T, Alloc>>;
   using Sim = flann::Mat<T, Alloc>;
 
-  Knn(Sim& sim, const flann::IndexParams& iparams,
-      const flann::SearchParams& sparams)
-    : Base(sim, iparams, sparams) {}
+  Knn(Sim& sim, const flann::IndexParams& iparams): Base(sim, iparams) {}
 
   virtual ~Knn() = default;
 };

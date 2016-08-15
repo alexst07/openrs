@@ -130,6 +130,9 @@ class Mat: protected ::flann::Matrix<T>,
 
 
   Mat(Mat&& mat) {
+    if (delete_)
+      delete this->data;
+
     this->data = mat.data;
     mat.data = nullptr;
 
@@ -163,6 +166,9 @@ class Mat: protected ::flann::Matrix<T>,
   }
 
   Mat& operator=(Mat&& mat) {
+    if (delete_)
+      delete this->data;
+
     this->data = mat.data;
     mat.data = nullptr;
 
@@ -227,6 +233,15 @@ class Mat: protected ::flann::Matrix<T>,
 
   RowType Row(size_t i) {
     return MatRef<value_type, Alloc>(Data() + i*Cols(), Cols());
+  }
+
+  void SetRow(size_t i, const Mat& data) {
+    // verify if all data elements fit on a row of this matrix
+    if (data.Size() != Cols())
+      return;
+
+    memcpy(reinterpret_cast<value_type*>(this->data) + i*Cols(), data.Data(),
+           Cols()*sizeof(value_type));
   }
 
   inline T* Data() noexcept {
@@ -311,38 +326,32 @@ class SimMat: public Mat<T, Alloc> {
   }
 
   void operator()(T value, size_t x, size_t y) override {
-    // Diagonal elements must no be set, because it is always 1
-    // on similarities matrix
+    // if x == y so the element if from diagonal, and every
+    // diagonal element on similarity matrix must be "1"
     if (x == y)
       return;
 
-    size_t xt = x;
+    size_t yt = y;
 
     // If the position is is higher than the position of the
     // diagonal element must subtract its position, since
     // in this case the diagonal does not exist, because
     // it is always formed by 1's
-    if (xt > y)
-      xt--;
+    if (yt > x)
+      yt--;
 
-    reinterpret_cast<T*>(this->data)[this->Cols()*y + xt] = value;
+    reinterpret_cast<T*>(this->data)[this->Cols()*x + yt] = value;
 
     // as the matrix of similarities is symmetrical with its diagonal
     // with unitary elements, in which case you need to change the
     // value in two places to achieve this behavior
-    if (y > x)
-      y--;
+    if (x > y)
+      x--;
 
-    reinterpret_cast<T*>(this->data)[this->Rows()*x + y] = value;
+    reinterpret_cast<T*>(this->data)[this->Cols()*y + x] = value;
   }
 
   inline T& operator()(size_t x, size_t y) {
-    // If the position is is higher than the position of the
-    // diagonal elementin the row, it must subtract its position,
-    // since in this case the diagonal does not exist, because
-    // it is always formed by 1's
-    if (x > y)
-      x--;
     return Mat<T, Alloc>::operator()(x, y);
   }
 
