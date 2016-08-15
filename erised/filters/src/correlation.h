@@ -233,27 +233,6 @@ class Correlation {
     return sim_;
   }
 
-//   std::vector<std::unordered_map<size_t, std::vector<value_type>>>
-//   Neighbors(size_t n) {
-//
-//   }
-//
-//   NeighborsElement(size_t i, size_t n) {
-//
-//   }
-//
-//   NeighborsIndexes(size_t n) {
-//
-//   }
-//
-//   NeighborsElementIndexes(size_t i, size_t n) {
-//
-//   }
-
-//   typename Sim<T, Alloc>::Slice Predict(size_t i) override {
-//
-//   }
-
   std::array<value_type,3> SimTerms(const Data &data, size_t i, size_t j,
                                     value_type ia, value_type ja) {
     auto l = [ia, ja](value_type v1, value_type v2, std::array<value_type,3> ret) {
@@ -292,28 +271,58 @@ template<class Data, class Sim>
 class CossineAdjusted: public Correlation<Data, Sim> {
   CossineAdjusted(): Correlation<Data, Sim>(Axis::COL) {}
 };
-// template<
-//   class T,
-//   class Alloc,
-//   template<typename, typename> class Data,
-//   template <typename, typename> class Sim>
-// class Pearson: public Correlation<T, Alloc, Data, Sim> {
-//  public:
-//   virtual void Fit(Data<T, Alloc> &data) {
-//
-//   }
-//
-//   virtual const Sim<T, Alloc>& Similarity() const noexcept {
-//
-//   }
-//
-//   virtual Sim<T, Alloc>& Similarity() noexcept {
-//
-//   }
-//
-// //   virtual typename Sim<T, Alloc>::Slice Predict(size_t i) {
-// //
-// //   }
-// };
+
+template<class T, template<typename = T> class Alloc = std::allocator>
+class SimNeighbors {
+ public:
+  using Sim = flann::SimMat<T, Alloc>;
+  using value_type = typename Sim::value_type;
+  using Mat = flann::Mat<value_type, Alloc>;
+  using MatSize = flann::Mat<size_t, Alloc>;
+
+  template<class Data>
+  SimNeighbors(const Correlation<Data, Sim>& correlations)
+    : sim_(correlations.Similarity()) {}
+
+  SimNeighbors(const Sim& sim): sim_(sim) {}
+
+  void Search(size_t n, const flann::IndexParams& iparams,
+              const flann::SearchParams& sparams) {
+    knn_ = std::make_unique<std::unique_ptr<Knn<Sim>>>(sim_, iparams);
+
+    std::vector<value_type> datav = {1};
+    Mat data_test(datav, 1, 1);
+
+    knn_->Search(data_test, n, sparams);
+  }
+
+  const Mat& Neighbors() const noexcept {
+    return knn_->Neighbors();
+  }
+
+  Mat& Neighbors() noexcept {
+    return knn_->Neighbors();
+  }
+
+  const MatSize& Indexes() const noexcept {
+    return knn_->Indexes();
+  }
+
+  virtual MatSize& Indexes() noexcept {
+    return knn_->Indexes();
+  }
+
+  typename Mat::RowType Neighbors(size_t i) noexcept {
+    return knn_->Neighbors(i);
+  }
+
+  typename MatSize::RowType Indexes(size_t i) noexcept {
+    return knn_->Neighbors(i);
+  }
+
+ private:
+  std::unique_ptr<Knn<Sim>> knn_;
+  const Sim& sim_;
+};
 
 }
