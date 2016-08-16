@@ -22,7 +22,34 @@ class PredictData;
 template<class Model>
 class PredictVec;
 
-template<class Data, class Sim, class Derived>
+// Auxialiary class for CollaborativeModel
+template<class Sim>
+class CollModelCorr {
+ public:
+  using value_type = typename Sim::value_type;
+
+  CollModelCorr() {}
+
+  template<class Data>
+  CollModelCorr(Data& data, Axis axis) {
+    Correlation<Data, Sim> correlation(axis);
+    correlation.Fit(data_);
+    sim_ = correlation.Similarity();
+  }
+
+  const Sim& Similarity() const noexcept {
+    return sim_;
+  }
+
+  Sim& Similarity() noexcept {
+    return sim_;
+  }
+
+ private:
+  Sim& sim_;
+};
+
+template<class Mat, class Derived>
 class CollaborativeModel {
   using Pred = PredictData<Derived>;
  public:
@@ -30,42 +57,42 @@ class CollaborativeModel {
   using data = Data;
   using sim = Sim;
 
+  template<class Data, class Sim>
   CollaborativeModel(Data& data, Axis axis)
-    : data_(data)
-    , correlation_(axis)
+    : coll_aux_(data, axis)
+    , calculated_(true) {
+      Sim& sim = coll_aux_.Similarity();
+
+      erised::Knn<Sim> knn(data, KDTreeIndexParams(4));
+      knn.Search(data_test, 2, SearchParams(2));
+
+      std::cout << "\n--Indexes--\n" << knn.Indexes() << "\n";
+
+      std::cout << "\n--Neighbors--\n" << knn.Neighbors() << "\n";
+    }
+
+  CollaborativeModel(Mat& neighbors)
+    : coll_aux_()
     , calculated_(false)
-    , axis_(axis) {}
-
-  const Sim& Similarity() const noexcept {
-    return correlation_.Similarity();
-  }
-
-  Sim& Similarity() noexcept {
-    return correlation_.Similarity();
-  }
+    , neighbors_(neighbors) {}
 
   Sim& NeighborsSimilarity(size_t n) noexcept {
     return correlation_.Similarity();
   }
 
   Sim& NeighborsSimilarity(size_t i, size_t n) noexcept {
-    return correlation_.Similarity();
-  }
-
-  void Fit() {
-    correlation_.Fit(data_);
-    calculated_ = true;
-  }
-
-  Axis GetAxis() const noexcept {
-    return axis_;
+    return Sim&
   }
 
  protected:
   template<size_t N, class Fn>
   std::array<value_type, N> PredTerms(const Pred& pred, size_t i, size_t n,
                                       Fn&& fn) {
-    //TODO: Calculates the N indexes of neighbors
+    Sim& sim;
+
+    if (calculated_)
+
+
     std::vector<size_t> indexes;
     auto res = pred.template Terms<N>(data_, Similarity(), i, indexes, fn);
     return res;
@@ -73,11 +100,9 @@ class CollaborativeModel {
 
   virtual value_type Predict(const Pred& pred, size_t i) = 0;
 
-  Data& data_;
-  Correlation<Data, Sim> correlation_;
+  CollModelCorr<Sim> coll_aux_;
   bool calculated_;
-  std::vector<size_t> indexes_;
-  Axis axis_;
+  Mat& neighbors_;
 };
 
 template<class Data, class Sim>
@@ -88,7 +113,6 @@ class UserFilter: public CollaborativeModel<Data, Sim, UserFilter<Data, Sim>> {
  public:
   using Base = CollaborativeModel<Data, Sim, UserFilter<Data, Sim>>;
   using value_type = typename Base::value_type;
-
 
   UserFilter(Data& data)
     : Base(data, Axis::ROW)
@@ -116,6 +140,39 @@ class UserFilter: public CollaborativeModel<Data, Sim, UserFilter<Data, Sim>> {
 
  private:
   std::vector<value_type> avgs_;
+};
+
+template<class Data, class Sim>
+class ItemFilter: public CollaborativeModel<Data, Sim, ItemFilter<Data, Sim>> {
+  using Pred = PredictData<ItemFilter<Data, Sim>>;
+  friend Pred;
+
+ public:
+  using Base = CollaborativeModel<Data, Sim, ItemFilter<Data, Sim>>;
+  using value_type = typename Base::value_type;
+
+  ItemFilter(Data& data): Base(data, Axis::COL) {}
+
+ private:
+  value_type Predict(const Pred& pred, size_t i) override {
+    auto arr = this->template PredTerms<2>(pred, i,
+      [this](size_t i, float v1, float v2, std::array<float, 2> arr){
+        std::array<float,2> terms;
+        terms[0] = v1*v2;
+        terms[1] = v1;
+
+        terms[0] += arr[0];
+        terms[1] += arr[1];
+
+        return terms;
+      });
+
+    if (arr[1] == 0)
+      ERISED_Error(Error::DIVIDE_BY_ZERO, "Divide by zero exception");
+
+    return arr[0]/arr[1];
+  }
+
 };
 
 template <class C, class Derived>
@@ -182,4 +239,5 @@ class ItemFilterVec: public CollaborativeModelVec<C, ItemFilterVec<C>> {
   }
 
 };
+
 }
