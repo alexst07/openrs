@@ -22,33 +22,6 @@ class PredictData;
 template<class Model>
 class PredictVec;
 
-// Auxialiary class for CollaborativeModel
-template<class Sim>
-class CollModelCorr {
- public:
-  using value_type = typename Sim::value_type;
-
-  CollModelCorr() {}
-
-  template<class Data>
-  CollModelCorr(Data& data, Axis axis) {
-    Correlation<Data, Sim> correlation(axis);
-    correlation.Fit(data_);
-    sim_ = correlation.Similarity();
-  }
-
-  const Sim& Similarity() const noexcept {
-    return sim_;
-  }
-
-  Sim& Similarity() noexcept {
-    return sim_;
-  }
-
- private:
-  Sim& sim_;
-};
-
 template<class Mat, class Derived>
 class CollaborativeModel {
   using Pred = PredictData<Derived>;
@@ -56,52 +29,22 @@ class CollaborativeModel {
   using value_type = typename Sim::value_type;
   using data = Data;
   using sim = Sim;
+  using Alloc = Sim::template Alloc;
 
-  template<class Data, class Sim>
-  CollaborativeModel(Data& data, Axis axis)
-    : coll_aux_(data, axis)
-    , calculated_(true) {
-      Sim& sim = coll_aux_.Similarity();
-
-      erised::Knn<Sim> knn(data, KDTreeIndexParams(4));
-      knn.Search(data_test, 2, SearchParams(2));
-
-      std::cout << "\n--Indexes--\n" << knn.Indexes() << "\n";
-
-      std::cout << "\n--Neighbors--\n" << knn.Neighbors() << "\n";
-    }
-
-  CollaborativeModel(Mat& neighbors)
-    : coll_aux_()
-    , calculated_(false)
-    , neighbors_(neighbors) {}
-
-  Sim& NeighborsSimilarity(size_t n) noexcept {
-    return correlation_.Similarity();
-  }
-
-  Sim& NeighborsSimilarity(size_t i, size_t n) noexcept {
-    return Sim&
-  }
+  CollaborativeModel(Mat& neighbors, Axis axis)
+      : neighbors_(neighbors) {}
 
  protected:
   template<size_t N, class Fn>
   std::array<value_type, N> PredTerms(const Pred& pred, size_t i, size_t n,
                                       Fn&& fn) {
-    Sim& sim;
-
-    if (calculated_)
-
-
     std::vector<size_t> indexes;
-    auto res = pred.template Terms<N>(data_, Similarity(), i, indexes, fn);
+    auto res = pred.template Terms<N>(data_, neighbors_, i, indexes, fn);
     return res;
   }
 
   virtual value_type Predict(const Pred& pred, size_t i) = 0;
 
-  CollModelCorr<Sim> coll_aux_;
-  bool calculated_;
   Mat& neighbors_;
 };
 

@@ -28,18 +28,6 @@ class NeighborsBase {
 
   virtual ~NeighborsBase() = default;
 
-  virtual const MatNeighbors& Neighbors() const noexcept = 0;
-
-  virtual const MatIndexes& Indexes() const noexcept = 0;
-
-  virtual MatNeighbors& Neighbors() noexcept = 0;
-
-  virtual MatIndexes& Indexes() noexcept = 0;
-
-  virtual typename MatNeighbors::RowType Neighbors(size_t) noexcept = 0;
-
-  virtual typename MatIndexes::RowType Indexes(size_t) noexcept = 0;
-
  protected:
   MatIn& mat_;
 };
@@ -57,30 +45,6 @@ class Knn: public NeighborsBase<Sim, flann::Mat> {
   }
 
   virtual ~Knn() = default;
-
-  Mat& Neighbors() noexcept override {
-
-  }
-
-  const Mat& Neighbors() const noexcept override {
-
-  }
-
-  const MatSizet& Indexes() const noexcept override {
-
-  }
-
-  MatSizet& Indexes() noexcept override {
-
-  }
-
-  typename Mat::Row Neighbors(size_t) noexcept override {
-
-  }
-
-  typename MatSizet::Row Indexes(size_t) noexcept override {
-
-  }
 };
 
 
@@ -103,73 +67,52 @@ class Knn<flann::Mat<T, Alloc>>
 
   virtual ~Knn() = default;
 
-  void Search(MatIn data_test, size_t n, const flann::SearchParams& sparams) {
+  std::tuple<MatNeighbors, MatIndexes>
+  Search(MatIn data_test, size_t n, const flann::SearchParams& sparams) {
     size_t num_rows = this->mat_.Rows();
     size_t num_cols = this->mat_.Cols();
 
-    neighbors_ =
-        std::move(flann::Mat<value_type, Alloc>(this->mat_.Rows(), n));
-
-    indices_ = std::move(flann::Mat<size_t, Alloc>(this->mat_.Rows(), n));
+    MatIndexes indices(this->mat_.Rows(), n);
 
     for (size_t i = 0; i < num_rows; i++) {
 
       // Gets num_cols elements from sim[num_cols*i]
       flann::Mat<value_type, Alloc> row(&this->mat_.Data()[num_cols*i], num_cols, 1);
 
-      flann::Mat<size_t, Alloc> indices;
+      flann::Mat<size_t, Alloc> indices_row;
 
       flann::Index<value_type, flann::L2<value_type>> index(row, iparams_);
 
       // Writes in each row from matrix indices_ and dists_
-      std::tie(indices, std::ignore) = index.KnnSearch(data_test, n, sparams);
+      std::tie(indices_row, std::ignore) = index.KnnSearch(data_test, n, sparams);
 
-      indices_.SetRow(i, indices);
+      indices.SetRow(i, indices_row);
     }
 
-    CalcNeighbors();
-  }
+    MatNeighbors neighbors = CalcNeighbors(n, indices);
 
-  virtual const MatNeighbors& Neighbors() const noexcept {
-    return neighbors_;
-  }
-
-  virtual MatNeighbors& Neighbors() noexcept {
-    return neighbors_;
-  }
-
-  virtual const MatIndexes& Indexes() const noexcept {
-    return indices_;
-  }
-
-  virtual MatIndexes& Indexes() noexcept {
-    return indices_;
-  }
-
-  virtual typename MatNeighbors::RowType Neighbors(size_t i) noexcept {
-    return neighbors_.Row(i);
-  }
-
-  virtual typename MatIndexes::RowType Indexes(size_t i) noexcept {
-    return indices_.Row(i);
+    return std::tuple<MatNeighbors, MatIndexes>(std::move(neighbors),
+                                                std::move(indices));
   }
 
  private:
-  void CalcNeighbors() {
+   MatNeighbors CalcNeighbors(size_t n, const MatIndexes indices) {
+     MatNeighbors neighbors(this->mat_.Rows(), n);
+
     // TODO: Change this for to parallel_for
     size_t row = 0;
-    for (size_t i = 0; i < indices_.Rows(); i++) {
-      auto indices_row = indices_.Row(i);
+    for (size_t i = 0; i < indices.Rows(); i++) {
+      auto indices_row = indices.Row(i);
 
       for (size_t j = 0; j < indices_row.Size(); j++) {
         size_t indice = indices_row[j];
-        neighbors_(this->mat_(i, (indice > i? --indice:indice)), i, j);
+        neighbors(this->mat_(i, (indice > i? --indice:indice)), i, j);
       }
     }
+
+    return neighbors;
   }
 
-  MatNeighbors neighbors_;
-  flann::Mat<size_t, Alloc> indices_;
   flann::IndexParams iparams_;
 };
 
@@ -225,11 +168,11 @@ class Correlation {
     sim_ = std::move(sim);
   }
 
-  const Sim& Similarity() const noexcept {
+  virtual const Sim& Similarity() const noexcept {
     return sim_;
   }
 
-  Sim& Similarity() noexcept {
+  virtual Sim& Similarity() noexcept {
     return sim_;
   }
 
@@ -286,42 +229,17 @@ class SimNeighbors {
 
   SimNeighbors(const Sim& sim): sim_(sim) {}
 
-  void Search(size_t n, const flann::IndexParams& iparams,
-              const flann::SearchParams& sparams) {
-    knn_ = std::make_unique<std::unique_ptr<Knn<Sim>>>(sim_, iparams);
+  std::tuple<Mat, MatSize> Search(size_t n, const flann::IndexParams& iparams,
+                                  const flann::SearchParams& sparams) {
+    Knn<Sim> knn(sim_, iparams);
 
     std::vector<value_type> datav = {1};
     Mat data_test(datav, 1, 1);
 
-    knn_->Search(data_test, n, sparams);
-  }
-
-  const Mat& Neighbors() const noexcept {
-    return knn_->Neighbors();
-  }
-
-  Mat& Neighbors() noexcept {
-    return knn_->Neighbors();
-  }
-
-  const MatSize& Indexes() const noexcept {
-    return knn_->Indexes();
-  }
-
-  virtual MatSize& Indexes() noexcept {
-    return knn_->Indexes();
-  }
-
-  typename Mat::RowType Neighbors(size_t i) noexcept {
-    return knn_->Neighbors(i);
-  }
-
-  typename MatSize::RowType Indexes(size_t i) noexcept {
-    return knn_->Neighbors(i);
+    return knn.Search(data_test, n, sparams);
   }
 
  private:
-  std::unique_ptr<Knn<Sim>> knn_;
   const Sim& sim_;
 };
 
