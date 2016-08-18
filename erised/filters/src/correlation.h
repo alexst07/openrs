@@ -129,51 +129,34 @@ class Knn<flann::SimMat<T, Alloc>>: public Knn<flann::Mat<T, Alloc>> {
   virtual ~Knn() = default;
 };
 
-template<class Data, class Sim>
-class Correlation {
-  using value_type = typename Data::value_type;
-
+// Insted of uses dynamic polymorphism, implements strategy pattern on
+// static time
+template<class T, class Data>
+class SimStrategy {
  public:
-  Correlation(Axis axis): axis_(axis) {}
+  using value_type = T;
 
-  virtual ~Correlation() = default;
+  SimStrategy(const Data &data, Axis axis): data_(data), axis_(axis) {}
 
-  virtual void Fit(const Data& data) {
-    auto vec_rows = erised::Avarage(data, this->axis_);
-    size_t data_size = this->axis_ == Axis::ROW?
-        data.SizeRows(): data.SizeRows();
+  virtual value_type Similarity(size_t i, size_t j) = 0;
 
-    // Calculates the avarages for all lines in the axis
-    auto avgs = erised::Avarage(data, this->axis_);
+ protected:
+  const Data &data_;
+  Axis axis_;
+};
 
-    Sim sim(data_size);
-    Range<size_t> range_sim(0, data_size);
+template<class T, class Data>
+class PearsonCossine: public SimStrategy<T, Data> {
+ public:
+  using value_type = T;
 
-    // To calculates all similarities, note that dynamic programming
-    // can be used, for all item or user n, all n's before has already
-    // been calculed, as:
-    // (n-1) + (n-2) + (n-3) + ...
-    // parallel_for is used for main loop, but each item
-    // calculates its similarity serially
-    parallel_for(range_sim, [&](const Range<size_t>& r){
-      // Scan each line and search for specific column
-      for(auto i = r.begin(); i != r.end(); ++i) {
-        for (size_t j = i+1; j < data_size; j++) {
-          auto arr = SimTerms(data, i, j, avgs[i], avgs[j]);
-          sim(arr[0]/(sqrt(arr[1])*sqrt(arr[2])), i, j);
-        }
-      }
-    });
+  PearsonCossine(const Data &data, Axis axis)
+      : SimStrategy<T, Data>(data, axis)
+      , avgs_(erised::Avarage(data, this->axis_)) {}
 
-    sim_ = std::move(sim);
-  }
-
-  virtual const Sim& Similarity() const noexcept {
-    return sim_;
-  }
-
-  virtual Sim& Similarity() noexcept {
-    return sim_;
+  value_type Similarity(size_t i, size_t j) override {
+    auto arr = SimTerms(this->data_, i, j, avgs_[i], avgs_[j]);
+    return arr[0]/(sqrt(arr[1])*sqrt(arr[2]));
   }
 
   std::array<value_type,3> SimTerms(const Data &data, size_t i, size_t j,
@@ -201,18 +184,75 @@ class Correlation {
   }
 
  private:
-  Sim sim_;
+  std::vector<value_type> avgs_;
+};
+
+template<class Data, class Sim, class Strategy>
+class Correlation {
+  using value_type = typename Sim::value_type;
+
+ public:
+  Correlation(const Data& data, Axis axis)
+      : strategy_(data, axis), data_(data), axis_(axis) {}
+
+  virtual ~Correlation() = default;
+
+  virtual Sim Similarities() {
+    size_t data_size = this->axis_ == Axis::ROW?
+        data_.SizeRows(): data_.SizeRows();
+
+    // Calculates the avarages for all lines in the axis
+    auto avgs = erised::Avarage(data_, this->axis_);
+
+    Sim sim(data_size);
+    Range<size_t> range_sim(0, data_size);
+
+    // To calculates all similarities, note that dynamic programming
+    // can be used, for all item or user n, all n's before has already
+    // been calculed, as:
+    // (n-1) + (n-2) + (n-3) + ...
+    // parallel_for is used for main loop, but each item
+    // calculates its similarity serially
+    parallel_for(range_sim, [&](const Range<size_t>& r){
+      // Scan each line and search for specific column
+      for(auto i = r.begin(); i != r.end(); ++i) {
+        for (size_t j = i+1; j < data_size; j++) {
+          sim(strategy_.Similarity(i, j), i, j);
+        }
+      }
+    });
+
+    return sim;
+  }
+
+  virtual value_type Similarity(size_t i, size_t j) {
+    return strategy_.Similarity(i, j);
+  }
+
+ private:
+  Strategy strategy_;
+  const Data &data_;
   Axis axis_;
 };
 
 template<class Data, class Sim>
-class Pearson: public Correlation<Data, Sim> {
-  Pearson(): Correlation<Data, Sim>(Axis::ROW) {}
+class Pearson: public Correlation<Data, Sim,
+    PearsonCossine<typename Sim::value_type, Data>> {
+ public:
+  using Base =  Correlation<Data, Sim,
+                PearsonCossine<typename Sim::value_type, Data>>;
+
+  Pearson(const Data& data): Base(data, Axis::ROW) {}
 };
 
 template<class Data, class Sim>
-class CossineAdjusted: public Correlation<Data, Sim> {
-  CossineAdjusted(): Correlation<Data, Sim>(Axis::COL) {}
+class CossineAdjusted: public Correlation<Data, Sim,
+    PearsonCossine<typename Sim::value_type, Data>> {
+ public:
+  using Base =  Correlation<Data, Sim,
+                PearsonCossine<typename Sim::value_type, Data>>;
+
+  CossineAdjusted(const Data& data): Base(data, Axis::COL) {}
 };
 
 template<class T, template<typename = T> class Alloc = std::allocator>
@@ -223,8 +263,8 @@ class SimNeighbors {
   using Mat = flann::Mat<value_type, Alloc>;
   using MatSize = flann::Mat<size_t, Alloc>;
 
-  template<class Data>
-  SimNeighbors(const Correlation<Data, Sim>& correlations)
+  template<class Data, class Correlation>
+  SimNeighbors(const Correlation& correlations)
     : sim_(correlations.Similarity()) {}
 
   SimNeighbors(const Sim& sim): sim_(sim) {}

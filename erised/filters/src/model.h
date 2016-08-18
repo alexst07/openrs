@@ -22,30 +22,33 @@ class PredictData;
 template<class Model>
 class PredictVec;
 
-template<class Mat, class Derived>
+template<class Data, class Mat, class Derived>
 class CollaborativeModel {
   using Pred = PredictData<Derived>;
  public:
-  using value_type = typename Sim::value_type;
-  using data = Data;
-  using sim = Sim;
-  using Alloc = Sim::template Alloc;
+  using value_type = typename Mat::value_type;
+  using Alloc = typename Mat::Alloc;
 
-  CollaborativeModel(Mat& neighbors, Axis axis)
-      : neighbors_(neighbors) {}
+  CollaborativeModel(Data& data, Mat& neighbors,
+                     const std::vector<size_t>& indexes, Axis axis)
+      : data_(data), neighbors_(neighbors), indexes_(indexes) {}
 
  protected:
   template<size_t N, class Fn>
-  std::array<value_type, N> PredTerms(const Pred& pred, size_t i, size_t n,
+  std::array<value_type, N> PredTerms(const Pred& pred,
+                                      size_t i,
+                                      size_t n,
                                       Fn&& fn) {
-    std::vector<size_t> indexes;
-    auto res = pred.template Terms<N>(data_, neighbors_, i, indexes, fn);
+    auto res = pred.template Terms<N>(data_, neighbors_, i, indexes_, fn);
     return res;
   }
 
   virtual value_type Predict(const Pred& pred, size_t i) = 0;
 
+ private:
+  Data& data_;
   Mat& neighbors_;
+  const std::vector<size_t>& indexes_;
 };
 
 template<class Data, class Sim>
