@@ -96,7 +96,7 @@ class Knn<flann::Mat<T, Alloc>>
   }
 
  private:
-   MatNeighbors CalcNeighbors(size_t n, const MatIndexes indices) {
+   MatNeighbors CalcNeighbors(size_t n, const MatIndexes& indices) {
      MatNeighbors neighbors(this->mat_.Rows(), n);
 
     // TODO: Change this for to parallel_for

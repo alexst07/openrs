@@ -27,7 +27,11 @@ class CollaborativeModel {
   using Pred = PredictData<Derived>;
  public:
   using value_type = typename Mat::value_type;
-  using Alloc = typename Mat::Alloc;
+  using data = Data;
+  using sim = Mat;
+
+  template<class T>
+  using alloc = typename Mat::template alloc<T>;
 
   CollaborativeModel(Data& data, Mat& neighbors,
                      const std::vector<size_t>& indexes, Axis axis)

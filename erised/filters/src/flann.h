@@ -231,8 +231,9 @@ class Mat: protected ::flann::Matrix<T>,
     return this->cols;
   }
 
-  RowType Row(size_t i) {
-    return MatRef<value_type, Alloc>(Data() + i*Cols(), Cols());
+  RowType Row(size_t i) const {
+    return MatRef<value_type, Alloc>(const_cast<value_type*>(Data()) +
+        i*Cols(), Cols());
   }
 
   void SetRow(size_t i, const Mat& data) {

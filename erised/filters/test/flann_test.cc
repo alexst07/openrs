@@ -77,16 +77,18 @@ TEST(Sample, Neighbors) {
   std::vector<float> datav = {1, 2, 3, 4, 1, 3, 1, 2, 2, 3, 1, 5, 3, 1, 1, 2, 4, 2, 5, 2};
   SimMat<float> data(datav.data(), 5);
   Mat<float> data_test(datat, 1, 1);
+  Mat<size_t> indexes;
+  Mat<float> neighbors;
 
 
   std::cout << "\n===\n" << data << "\n=====\n" << data_test;
 
   erised::Knn<SimMat<float>> knn(data, KDTreeIndexParams(4));
-  knn.Search(data_test, 2, SearchParams(2));
+  std::tie(neighbors, indexes) = knn.Search(data_test, 2, SearchParams(2));
 
-  std::cout << "\n--Indexes--\n" << knn.Indexes() << "\n";
+  std::cout << "\n--Indexes--\n" << indexes << "\n";
 
-  std::cout << "\n--Neighbors--\n" << knn.Neighbors() << "\n";
+  std::cout << "\n--Neighbors--\n" << neighbors << "\n";
 }
 
 TEST(Sample, Sampleunit) {
