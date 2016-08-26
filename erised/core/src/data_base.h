@@ -1,3 +1,5 @@
+#pragma once
+
 #ifndef __ERISED_MATRIX_BASE__
 #define __ERISED_MATRIX_BASE__
 
@@ -382,9 +384,34 @@ class MatIter: Mat2d<T> {
     Ref& ref_;
     size_t pos_;
   };
-
 };
 
+template<class T, class Iter, class ConstIter>
+class MatRating: Mat2d<T> {
+ public:
+  using value_type = T;
+  typedef Iter iterator;
+  typedef ConstIter const_iterator;
+
+  static constexpr size_t order = MatBase<T, 2>::order;
+
+  MatRating() = default;
+  virtual ~MatRating() = default;
+
+  virtual const value_type& operator()(size_t x, size_t y) const = 0;
+
+  virtual value_type& operator()(size_t x, size_t y) = 0;
+
+  virtual void operator()(value_type v, size_t x, size_t y) = 0;
+
+  virtual iterator begin() noexcept = 0;
+
+  virtual const_iterator begin() const noexcept = 0;
+
+  virtual iterator end() noexcept = 0;
+
+  virtual const_iterator end() const noexcept = 0;
+};
 
 /**
  *
